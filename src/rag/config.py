@@ -36,6 +36,11 @@ class RagConfig:
     # Phase-1: exact-match answer cache (Tier-2; semantic FAQ tier is Phase 3)
     answer_cache: bool = _b("ANSWER_CACHE", "true")
     cache_path: str = os.getenv("ANSWER_CACHE_PATH", str(ROOT / "data" / "cache.db"))
+    # Phase-2: ETL watermarks + provenance ledger (docs/ETL_AND_TRIGGERS.md §4)
+    etl_state_path: str = os.getenv("ETL_STATE_PATH", str(ROOT / "data" / "etl_state.db"))
+    etl_schedule: str = os.getenv("ETL_SCHEDULE", "daily")
+    etl_fedreg_since: str = os.getenv("ETL_FEDREG_SINCE", "2020-01-01")
+    etl_ecfr_since: str = os.getenv("ETL_ECFR_SINCE", "2020-01-01")
 
     @property
     def parts(self) -> list[str]:

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from flask import Flask, Response, request, send_from_directory
 
+from ..etl import state as etl_state
 from ..rag import cache
 from ..rag.config import CONFIG
 from ..rag.indexing.builder import get_collection
@@ -37,11 +38,24 @@ def corpus_status():
     try:
         col = get_collection(CONFIG)
         n = col.count()
-        peek = col.get(limit=1, include=["metadatas"])
-        as_of = (peek["metadatas"][0].get("as_of") if peek["metadatas"] else None)
+        got = col.get(include=["metadatas"])
+        metas = got["metadatas"]
+        as_of = (metas[0].get("as_of") if metas else None)
     except Exception as e:
         return {"indexed": 0, "error": str(e)}, 503
-    return {"indexed": n, "as_of": as_of, "rag_mode": CONFIG.rag_mode}
+
+    try:
+        last_etl_run = etl_state.last_successful_run(CONFIG)
+    except Exception:
+        last_etl_run = None  # ETL state db is optional infra
+
+    return {
+        "indexed": n,
+        "as_of": as_of,
+        "rag_mode": CONFIG.rag_mode,
+        "last_etl_run": last_etl_run,
+        "counts_by_source": etl_state.counts_by_source(metas),
+    }
 
 
 @app.post("/chat_stream")

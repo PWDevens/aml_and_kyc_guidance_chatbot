@@ -59,6 +59,37 @@
     tech-debt ledger remain satisfied from the first pass (unchanged by a docstring-only
     edit). **Iteration 1 is complete and ships.**
 
+- **Iteration 2 — senior-PM gate: SHIP** (2026-07-02; `.build/iter-2/verdict.md`).
+  Phase 2 trigger-based ETL. All 7 ACs met and demonstrably true. Verified independently
+  at the gate (not on the reports' word):
+  - **D4 (no `build()` in ETL path):** read `builder.py:60-73` — `upsert_by_citation`
+    uses `get_or_create_collection` + `col.get(where=citation)` + `col.delete` + `col.add`;
+    never `delete_collection`/`create_collection`. `build()` untouched. `pipeline.py` +
+    `scripts/etl_run.py` import only `upsert_by_citation`.
+  - **R8 (watermark advances only on success):** read `pipeline.py` control flow —
+    `set_watermark` runs only in the `try/else` (batch loop completed with no raise); the
+    `except` records one `error` provenance row and re-raises before any advance;
+    `run_once` isolates each source so one source's failure can't corrupt the other's
+    watermark. Confirmed by `test_etl_state.py::test_watermark_not_advanced_after_simulated_mid_batch_failure`.
+  - **D3 (`chapter: null` intersection):** read `rules.py:19-25` — `touches_watched_cfr`
+    never reads `chapter`, normalizes `title`(int/str)/`part` to str. Unit-tested.
+  - **eCFR removed-section fix** (`ecfr.py:121`, `v.get("removed")` filter): judged a
+    correct, in-scope production bug fix (a `removed:true` `/versions` entry has no
+    fetchable text and 404s), not scope creep. Directly unit-covered by the tester's new
+    `test_ecfr_changed_sections.py`.
+  - **`data/chroma` deletion incident:** judged a process incident handled correctly —
+    caught, reported (not hidden), restored via the normal `build_index`; gitignored
+    derived data, no repo footprint, no data permanently lost. No penalty.
+  - **Tester's 3 new gap-coverage files** (`test_ecfr_changed_sections.py`,
+    `test_corpus_status_endpoint.py`, `test_etl_pipeline_r1_schedule.py`): read all three;
+    they have real teeth (exercise production code paths, not tautologies).
+  - **Suite re-run at the gate:** 46 deterministic tests pass in 34s + the 1 live FedReg
+    test passes in 130s against the real API = **47 passed**, independently confirmed.
+  - **Scope clean:** no "Do NOT create" path exists (no `faq`/`orchestration`/
+    `graph_lightrag.py`/`ffiec.py`/`fincen.py`/`seed_faq.py`, no `.github/workflows`, no
+    separate proposed/advisory collections); no `ponytail:` additions in any new src/test
+    file; no new dependency; parameterized SQL throughout `state.py`. **Iteration 2 ships.**
+
 ## Accepted tech-debt from Iteration 1 (bounded, with upgrade paths — carry forward)
 - **FedReg loader is abstract-only.** No `full_text_xml_url` fetch/parse. Ceiling: if
   abstract text proves too thin in a later eval round, add an XML fetch+flatten step
@@ -76,32 +107,68 @@
   `RAG_MODE` (pre-existing Phase-0 wart; not in iter-1's required scope). One-line label
   fix whenever `eval.py` is next touched.
 
+## Accepted tech-debt from Iteration 2 (bounded, with upgrade paths — carry forward)
+- **RESOLVED (was carried from iter-1): CFR-reference filtering of FedReg docs.** R1/R2
+  (`touches_watched_cfr`) + R3 (`TOPIC_TERMS`) now gate every FedReg doc before ingest;
+  non-matching docs get an `action='skip'` provenance row. The iter-1 deferral is closed.
+- **eCFR "removed" sections are skipped, not deleted from the corpus.** A repealed 31 CFR
+  section (e.g. `1010.655`) keeps its old chunks in `aml_kyc` from a prior build;
+  `changed_sections` no longer trips on it, but nothing actively removes stale content for
+  a repealed section. Ceiling: an R4b rule that upserts an empty record list for a removed
+  citation (deleting its chunks with none replacing) — clean small follow-up, out of scope
+  here because the spec's R4 interface assumes a fetchable change, not a removal.
+- **R1 "schedule" is a provenance marker, not a timer/queue** (D7, spec-mandated). The
+  actual eCFR re-pull happens whenever the eCFR watcher next surfaces the amended section
+  after its `effective_on`. Ceiling: if a later phase needs an active due-date alert, query
+  `provenance WHERE action='schedule' AND as_of <= today` rather than build a new mechanism.
+- **No HTTP backoff/retry on watcher fetches** — a single `requests` call + `raise_for_status()`
+  (spec allowed "a single retry or none"). Correctness rests on watermark-hold + upsert
+  idempotency, not the backoff curve. Ceiling: add `time.sleep` + retry count in the
+  watcher fetch if live flakiness becomes real (none observed in the build's ~10 live runs).
+- **`FEDREG_MAX_DOCS=50` caps every `etl_run` pass**, so a cold-start from
+  `ETL_FEDREG_SINCE=2020-01-01` needs multiple invocations to fully catch up (empirically
+  3 in this build). This is iter-1's existing default, not new, but its interaction with
+  incremental watermarking is worth noting. Ceiling: raise the env var or loop `run_once`
+  until `detected == 0` if same-day full catch-up matters later.
+- **`counts_by_source` recomputes from a full `col.get(include=["metadatas"])` on every
+  `/corpus_status` call** — spec-sanctioned for the ~475-chunk demo corpus ("do not add a
+  separate count index"). Ceiling: add a maintained count index if the corpus grows large.
+
 ## Next
-- **Iteration 2 — Phase 2: trigger-based ETL** (per `.build/backlog.md`). Goal: the corpus
-  updates itself incrementally when FinCEN/eCFR publish changes, with a provenance ledger
-  (`docs/ETL_AND_TRIGGERS.md`). Acceptance criteria: `src/etl/watchers/` (fedreg.py,
-  ecfr.py) polling from a stored watermark; rules engine `src/etl/rules.py` implementing
-  R1–R4; upsert-by-citation load (delete+add, no stale dupes) with watermark advancing
-  only on success (R8 atomic/retriable); `data/etl_state.db` watermarks + provenance
-  ledger; `GET /corpus_status` reporting `as_of` / last-run / per-source counts; a
-  recorded-fixture FinCEN change detected + ingested incrementally, idempotent on re-run.
-  Out of scope: R5/R6 (FAQ/graph sync — Phase 3), R7 (FFIEC — Phase 3), scheduled-CI
-  auto-PR (needs a real remote — document as a manual follow-up).
-  - **Carry into Iteration 2** the Phase-2-deferred item already logged below: no
-    CFR-reference filtering of FedReg docs yet (deferred to ETL rules R1–R3).
-- **Natural later-iteration candidate (not for Iteration 2):** the measured numbers favor
+- **Iteration 3 — Phase 3: orchestration + semantic FAQ cache** (per `.build/backlog.md`).
+  Phase 2 (trigger-based ETL) shipped at the iter-2 gate. Iteration 3 opens the Phase-3
+  scope deferred out of iter-2: R5 (FAQ refresh) and R6 (graph rebuild) sync triggers,
+  R7 (FFIEC ingest / `loaders/ffiec.py`), the semantic FAQ cache tier (`src/rag/faq/**`,
+  `scripts/seed_faq.py`), and orchestration (`src/rag/orchestration/**`, planner/skills,
+  `answer_verifier`). Carry forward into the iter-3 spec:
+  - **F2 (CIP completeness)** from the pre-loop ledger: Phase-3's `answer_verifier` should
+    include a mandatory-element completeness check.
+  - **eCFR removed-section deletion (R4b)** — the iter-2 accepted-debt item above; a
+    natural fit alongside R5/R6 sync rules if Phase 3 touches corpus-mutation rules.
+- **Natural later-iteration candidate (not for Iteration 3 unless scoped in):** the measured numbers favor
   `hybrid_rerank` (avg rank 1.12, term_recall 1.00 vs naive's 0.92). AC-4 was scoped to a
   naive-vs-hybrid decision only, so promoting `hybrid_rerank` to default is a *new*
   evidence-based decision for a later iteration to make deliberately — not a gap in
   iteration 1.
 
 ## Blockers
-- None. (F1 is a required fix, not a blocker — no irreversible action, no correctness or
-  security risk. No irreversible action is required by the next iteration either.)
+- None. Iteration 2 shipped clean at the gate (no required fixes). No irreversible action
+  is required by Iteration 3 either. (Historical: iter-1's F1 docstring reword was a
+  required fix, not a blocker.)
 
 ## Manual follow-ups for the user (accumulate here, do not perform)
 - No git remote configured — repo was `git init`'d locally at loop kickoff so each
   iteration is diffable. Push to a remote (e.g. GitHub) is the user's call.
+- **Scheduled-CI auto-PR for ETL (Phase-2/iter-2 deferral, D7).** The ETL doc §5
+  GitHub-Actions pattern (cron-triggered `python -m scripts.etl_run` + auto-commit of the
+  rebuilt `data/chroma` + `data/etl_state.db` via LFS) needs a configured git remote and
+  CI credentials — neither exists in this local repo. Follow-up: push to a remote, then
+  author the workflow file. `scripts/etl_run.py` is a single local pass; no workflow was
+  written this iteration by design.
+- **Container entrypoint loop honoring `ETL_SCHEDULE` (Phase-2/iter-2 deferral, D7).**
+  `etl_schedule` is read into `RagConfig` but intentionally unused; wiring an actual
+  cron/loop inside a container entrypoint for a self-updating deployment is deferred to the
+  containerization phase (Phase 5 per the roadmap).
 - Machine migration note in `.pipeline/HANDOFF.md` §0b (RTX 5070 GPU build path) is
   informational only; this loop runs CPU-only per the project's default.
 - **`onnxruntime-genai` version drift — FIXED by orchestrator (2026-07-02,

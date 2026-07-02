@@ -45,13 +45,16 @@ def _record_from_doc(doc: dict) -> dict | None:
     }
 
 
-def load_documents(agency: str, since: str, max_docs: int) -> list[dict]:
+def fetch_documents(agency: str, since: str, max_docs: int) -> list[dict]:
     """Fetch FinCEN FedReg documents (oldest first), paginating up to
-    max_docs, and return one record per document with retrievable text."""
-    records: list[dict] = []
+    max_docs, and return the RAW API result dicts — type/cfr_references/
+    effective_on intact (D5). Callers that only need corpus records should
+    shape each via _record_from_doc; the ETL watcher also classifies on the
+    raw fields, which _record_from_doc drops."""
+    docs: list[dict] = []
     page = 1
     per_page = min(max_docs, 100)
-    while len(records) < max_docs:
+    while len(docs) < max_docs:
         params = {
             "conditions[agencies][]": agency,
             "conditions[publication_date][gte]": since,
@@ -66,13 +69,15 @@ def load_documents(agency: str, since: str, max_docs: int) -> list[dict]:
         results = data.get("results", [])
         if not results:
             break
-        for doc in results:
-            rec = _record_from_doc(doc)
-            if rec is not None:
-                records.append(rec)
-            if len(records) >= max_docs:
-                break
-        if not data.get("next_page_url") or len(records) >= max_docs:
+        docs.extend(results)
+        if not data.get("next_page_url") or len(docs) >= max_docs:
             break
         page += 1
-    return records[:max_docs]
+    return docs[:max_docs]
+
+
+def load_documents(agency: str, since: str, max_docs: int) -> list[dict]:
+    """Fetch FinCEN FedReg documents (oldest first), paginating up to
+    max_docs, and return one record per document with retrievable text."""
+    return [rec for doc in fetch_documents(agency, since, max_docs)
+            if (rec := _record_from_doc(doc)) is not None]
