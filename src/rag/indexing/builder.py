@@ -10,7 +10,8 @@ from chromadb.utils import embedding_functions
 from ..config import RagConfig
 
 # metadata chroma can store (scalars only); keep the citable fields.
-_META = ("citation", "heading", "source", "title", "chapter", "part", "section", "url", "as_of")
+_META = ("citation", "heading", "source", "title", "chapter", "part", "section", "url", "as_of",
+          "fedreg_doc_number", "publication_date")
 
 
 def _client(cfg: RagConfig):

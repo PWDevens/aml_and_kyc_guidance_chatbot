@@ -68,11 +68,12 @@ def stream(question: str, context: str, max_new_tokens: int = 400):
     input_tokens = tok.encode(prompt)
     params = og.GeneratorParams(model)
     params.set_search_options(max_length=len(input_tokens) + max_new_tokens, do_sample=False)
-    # ponytail: og's pybind binding rejects a plain list here; numpy array binds.
-    params.input_ids = np.asarray([input_tokens], dtype=np.int32)
     gen = og.Generator(model, params)
+    # onnxruntime-genai >=0.6 dropped params.input_ids / gen.compute_logits() in
+    # favor of Generator.append_tokens(), which primes the KV cache and computes
+    # logits for the prompt in one call.
+    gen.append_tokens(np.asarray([input_tokens], dtype=np.int32))
     stream_tok = tok.create_stream()
     while not gen.is_done():
-        gen.compute_logits()
         gen.generate_next_token()
         yield stream_tok.decode(gen.get_next_tokens()[0])

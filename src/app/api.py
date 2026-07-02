@@ -8,6 +8,7 @@ from pathlib import Path
 
 from flask import Flask, Response, request, send_from_directory
 
+from ..rag import cache
 from ..rag.config import CONFIG
 from ..rag.indexing.builder import get_collection
 from ..rag.llm import models
@@ -50,16 +51,30 @@ def chat_stream():
         return {"error": "empty question"}, 400
 
     def gen():
+        if CONFIG.answer_cache:
+            hit = cache.get(CONFIG, question)
+            if hit is not None:
+                yield _sse("token", {"t": hit["answer"]})
+                yield _sse("citations", {"citations": hit["citations"], "as_of": hit["as_of"]})
+                yield _sse("done", {})
+                return
+
         context, citations = retrieve(CONFIG, question)
+        as_of = citations[0].get("as_of") if citations else None
         if not citations:
             yield _sse("token", {"t": "No matching regulatory text was found in the indexed corpus."})
         elif CONFIG.generate and models.available():
+            # Only the generated (verified/authoritative) path is cache-eligible —
+            # the extractive fallback and "no matching text" message below are not.
+            answer_parts = []
             for chunk in models.stream(question, context, CONFIG.max_new_tokens):
+                answer_parts.append(chunk)
                 yield _sse("token", {"t": chunk})
+            if CONFIG.answer_cache:
+                cache.put(CONFIG, question, "".join(answer_parts), citations, as_of)
         else:
             # ponytail: extractive fallback so the demo answers without the LLM.
             yield _sse("token", {"t": "Most relevant provision:\n\n" + context.split("\n\n")[0]})
-        as_of = citations[0].get("as_of") if citations else None
         yield _sse("citations", {"citations": citations, "as_of": as_of})
         yield _sse("done", {})
 

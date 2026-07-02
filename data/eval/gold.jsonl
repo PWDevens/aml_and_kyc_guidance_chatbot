@@ -3,3 +3,23 @@
 {"q": "What are the minimum requirements for a customer identification program?", "expect_citation": "31 CFR 1020.220", "answer_contains": "identity"}
 {"q": "What identifying information must a bank obtain from a customer at account opening?", "expect_citation": "31 CFR 1020.220", "answer_contains": "address"}
 {"q": "What records must be made for extensions of credit over $10,000?", "expect_citation": "31 CFR 1010.410", "answer_contains": "extension of credit"}
+{"q": "What is the reporting threshold for currency received in a trade or business?", "expect_citation": "31 CFR 1010.330", "answer_contains": "10,000"}
+{"q": "What form is used to report currency in excess of $10,000 received in a trade or business?", "expect_citation": "31 CFR 1010.330", "answer_contains": "Form 8300"}
+{"q": "How many days does a person have to file a report after receiving an initial payment exceeding $10,000 in a trade or business?", "expect_citation": "31 CFR 1010.330", "answer_contains": "15 days"}
+{"q": "What identification must a financial institution verify before completing a currency transaction requiring a CTR?", "expect_citation": "31 CFR 1010.312", "answer_contains": "verify"}
+{"q": "How are multiple currency transactions aggregated for CTR purposes in one business day?", "expect_citation": "31 CFR 1010.313", "answer_contains": "10,000"}
+{"q": "What does it mean to structure a transaction to evade currency reporting requirements?", "expect_citation": "31 CFR 1010.314", "answer_contains": "structur"}
+{"q": "What is the threshold for reporting the transportation of currency or monetary instruments into or out of the United States?", "expect_citation": "31 CFR 1010.340", "answer_contains": "10,000"}
+{"q": "Who must report a financial interest in a foreign bank, securities, or other financial account?", "expect_citation": "31 CFR 1010.350", "answer_contains": "United States person"}
+{"q": "At what dollar amount must a financial institution begin recordkeeping when issuing a bank check, cashier's check, or money order purchased with currency?", "expect_citation": "31 CFR 1010.415", "answer_contains": "3,000"}
+{"q": "How long must records of bank check and money order purchases be retained?", "expect_citation": "31 CFR 1010.415", "answer_contains": "five years"}
+{"q": "What are the beneficial ownership identification requirements for legal entity customers opening an account?", "expect_citation": "31 CFR 1010.230", "answer_contains": "25 percent"}
+{"q": "What minimum elements must a bank's anti-money laundering program include?", "expect_citation": "31 CFR 1020.210", "answer_contains": "internal controls"}
+{"q": "When must a bank file a Suspicious Activity Report after detecting facts that may require one?", "expect_citation": "31 CFR 1020.320", "answer_contains": "30 calendar days"}
+{"q": "What is the minimum dollar amount involved for a transaction to require a Suspicious Activity Report filing by a bank?", "expect_citation": "31 CFR 1020.320", "answer_contains": "5,000"}
+{"q": "What criteria make a non-listed business eligible to be designated an exempt person from currency transaction reporting?", "expect_citation": "31 CFR 1020.315", "answer_contains": "10,000"}
+{"q": "What recordkeeping is required for funds transfers of $3,000 or more accepted by a bank as an originator's bank?", "expect_citation": "31 CFR 1020.410", "answer_contains": "3,000"}
+{"q": "What did FinCEN's 2022 beneficial ownership information reporting final rule require entities to report?", "expect_citation": "2022-21020", "answer_contains": "beneficial owner"}
+{"q": "What law does FinCEN's Beneficial Ownership Information Reporting Requirements final rule implement?", "expect_citation": "2022-21020", "answer_contains": "Corporate Transparency Act"}
+{"q": "What FinCEN action repealed the special measure against Banco Delta Asia?", "expect_citation": "2020-17143", "answer_contains": "Banco Delta Asia"}
+{"q": "What proposed rule would lower the funds transfer recordkeeping threshold from $3,000 to $250 for cross-border transactions?", "expect_citation": "2020-23756", "answer_contains": "250"}

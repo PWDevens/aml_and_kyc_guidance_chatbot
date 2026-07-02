@@ -27,6 +27,15 @@ class RagConfig:
     # Phase-0 keeps the corpus small & fast: a few core BSA parts unless overridden.
     ecfr_parts: str = os.getenv("ECFR_PARTS", "1010,1020")
     generate: bool = _b("GENERATE", "true")
+    # Phase-1: FinCEN Federal Register static loader (ARCHITECTURE §10)
+    fedreg_agency: str = os.getenv("FEDREG_AGENCY", "financial-crimes-enforcement-network")
+    fedreg_since: str = os.getenv("FEDREG_SINCE", "2020-01-01")
+    fedreg_max_docs: int = int(os.getenv("FEDREG_MAX_DOCS", "50"))
+    # Phase-1: section-aware chunking budget (chars), safely under CONTEXT_CHAR_BUDGET
+    chunk_char_budget: int = int(os.getenv("CHUNK_CHAR_BUDGET", "1500"))
+    # Phase-1: exact-match answer cache (Tier-2; semantic FAQ tier is Phase 3)
+    answer_cache: bool = _b("ANSWER_CACHE", "true")
+    cache_path: str = os.getenv("ANSWER_CACHE_PATH", str(ROOT / "data" / "cache.db"))
 
     @property
     def parts(self) -> list[str]:

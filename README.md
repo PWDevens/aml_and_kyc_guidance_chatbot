@@ -32,10 +32,13 @@ cache, Flask/SSE serving, Docker, and a tagged version progression). It then
 
 ## Status
 
-📋 **Planning / pre-build.** This repository currently holds the end-to-end
-product development plan. No application code is committed yet — the docs below
-specify what gets built, in what order. Implementation follows the
-[roadmap](docs/ROADMAP.md).
+⏳ **Phase 1 in progress.** Phases 0–1 are implemented and tested. Phase 0 (eCFR
+loader, naive retrieval, generation, Flask+SSE app) and Phase 1 Iter 1 (multi-
+mode retrieval backbone, FinCEN Federal Register corpus, section-aware chunking,
+exact-match answer cache, expanded gold eval set) are complete. See
+[CHANGELOG](CHANGELOG.md) for per-iteration details. Phases 2–5 (trigger-based
+ETL, orchestration, semantic FAQ cache, Cognitus UI/design, CI/Docker) follow
+the [roadmap](docs/ROADMAP.md).
 
 ---
 

@@ -5,6 +5,8 @@ chromadb
 sentence-transformers     # also pulls the cross-encoder reranker
 numpy                     # used directly by the Phi-4 wrapper
 rank-bm25                 # hybrid retrieval (BM25 + dense RRF)
-onnxruntime-genai         # CPU generation. New machine w/ NVIDIA GPU:
+onnxruntime-genai         # CPU generation. Needs >=0.6 (Generator.append_tokens API,
+                          #   used by src/rag/llm/models.py); tested against 0.14.1.
+                          #   New machine w/ NVIDIA GPU:
                           #   pip install onnxruntime-genai-cuda  (instead of this line)
 huggingface-hub

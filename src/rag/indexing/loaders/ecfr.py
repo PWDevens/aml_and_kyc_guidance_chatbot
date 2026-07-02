@@ -1,8 +1,10 @@
 """eCFR loader — pulls 31 CFR Chapter X sections from the public eCFR API.
 
 One section = one citable, retrievable unit (ARCHITECTURE §7 chunking note:
-respect section boundaries, don't split mid-clause). For Phase 0 a section IS
-the chunk; finer paragraph-aware splitting is a Phase-1 tuning task.
+respect section boundaries, don't split mid-clause). Sections under the char
+budget stay a single chunk; longer sections are split on paragraph boundaries
+(`_split_section`) into several chunks that keep the same citation/metadata,
+so citations still resolve to the whole section (Phase-1 tuning).
 ponytail: stdlib xml.etree, requests (already a dep). No XML framework."""
 from __future__ import annotations
 import xml.etree.ElementTree as ET
@@ -12,6 +14,7 @@ import requests
 
 API = "https://www.ecfr.gov/api/versioner/v1"
 UA = {"User-Agent": "aml-kyc-rag-chatbot/0.1 (portfolio project)"}
+DEFAULT_CHUNK_CHAR_BUDGET = 1500
 
 
 @lru_cache(maxsize=8)
@@ -29,8 +32,34 @@ def _text(elem: ET.Element) -> str:
     return "\n".join(p for p in parts if p)
 
 
-def load_part(title: str, chapter: str, part: str, as_of: str | None = None) -> list[dict]:
-    """Return one record per section (eCFR DIV8) in the given part."""
+def _split_section(text: str, budget: int) -> list[str]:
+    """Split section text on paragraph boundaries into chunks <= budget chars.
+
+    Returns [text] unchanged when it already fits. Never splits inside a
+    paragraph — paragraphs are packed greedily so a chunk may run over budget
+    only when a single paragraph itself exceeds it (kept whole, uncut)."""
+    if len(text) <= budget:
+        return [text]
+    paras = text.split("\n")
+    chunks: list[str] = []
+    cur: list[str] = []
+    cur_len = 0
+    for p in paras:
+        added = len(p) + (1 if cur else 0)  # +1 for the joining newline
+        if cur and cur_len + added > budget:
+            chunks.append("\n".join(cur))
+            cur, cur_len = [p], len(p)
+        else:
+            cur.append(p)
+            cur_len += added
+    if cur:
+        chunks.append("\n".join(cur))
+    return chunks
+
+
+def load_part(title: str, chapter: str, part: str, as_of: str | None = None,
+              chunk_char_budget: int = DEFAULT_CHUNK_CHAR_BUDGET) -> list[dict]:
+    """Return one record per citable chunk (eCFR DIV8 section, split if long)."""
     as_of = as_of or latest_date(title)
     url = f"{API}/full/{as_of}/title-{title}.xml"
     r = requests.get(url, params={"chapter": chapter, "part": part}, headers=UA, timeout=60)
@@ -47,9 +76,7 @@ def load_part(title: str, chapter: str, part: str, as_of: str | None = None) -> 
         body = _text(sec)
         if not body:
             continue
-        records.append({
-            "id": f"ecfr-{title}-{cite}",
-            "text": body,
+        base = {
             "citation": f"{title} CFR {cite}",
             "heading": heading,
             "source": "ecfr",
@@ -59,12 +86,19 @@ def load_part(title: str, chapter: str, part: str, as_of: str | None = None) -> 
             "section": cite,
             "url": f"https://www.ecfr.gov/current/title-{title}/chapter-{chapter}/part-{part}/section-{cite}",
             "as_of": as_of,
-        })
+        }
+        pieces = _split_section(body, chunk_char_budget)
+        if len(pieces) == 1:
+            records.append({"id": f"ecfr-{title}-{cite}", "text": pieces[0], **base})
+        else:
+            for i, piece in enumerate(pieces):
+                records.append({"id": f"ecfr-{title}-{cite}-{i}", "text": piece, **base})
     return records
 
 
-def load_parts(title: str, chapter: str, parts: list[str], as_of: str | None = None) -> list[dict]:
+def load_parts(title: str, chapter: str, parts: list[str], as_of: str | None = None,
+                chunk_char_budget: int = DEFAULT_CHUNK_CHAR_BUDGET) -> list[dict]:
     out: list[dict] = []
     for p in parts:
-        out.extend(load_part(title, chapter, p, as_of))
+        out.extend(load_part(title, chapter, p, as_of, chunk_char_budget))
     return out

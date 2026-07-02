@@ -3,7 +3,16 @@
     "allow": [
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(curl -s \"https://www.federalregister.gov/api/v1/documents.json?conditions%5Bagencies%5D%5B%5D=financial-crimes-enforcement-network&conditions%5Bpublication_date%5D%5Bgte%5D=2020-01-01&order=oldest&per_page=3&fields%5B%5D=document_number&fields%5B%5D=type&fields%5B%5D=title&fields%5B%5D=abstract&fields%5B%5D=publication_date&fields%5B%5D=effective_on&fields%5B%5D=cfr_references&fields%5B%5D=html_url&fields%5B%5D=full_text_xml_url\" -H \"User-Agent: aml-kyc-rag-chatbot/0.1 \\(dev\\)\")",
+      "Bash(pip list *)",
+      "Bash(where python *)",
+      "Bash(where conda *)",
+      "Bash(conda env *)",
+      "Bash(\"C:\\\\Users\\\\pwdev\\\\miniconda3\\\\python.exe\" --version)",
+      "Bash(\"C:\\\\Users\\\\pwdev\\\\miniconda3\\\\python.exe\" -m pip list)",
+      "Bash(ls -la \"C:\\\\Users\\\\pwdev\\\\miniconda3\\\\envs\\\\\" 2>/dev/null; echo \"---\"; find / -maxdepth 6 -iname \"python.exe\" 2>/dev/null | grep -v -i \"windowsapps\")",
+      "Bash(ls \"C:\\\\Users\\\\pwdev\\\\miniconda3\\\\envs\\\\\" 2>&1)"
     ]
   }
 }
