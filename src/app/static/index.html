@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>AML/KYC RAG — baseline</title>
+<style>
+  :root { --blue:#1a3a6b; --ink:#1c2530; --line:#d9dee6; }
+  body { font:16px/1.5 system-ui,sans-serif; color:var(--ink); max-width:760px; margin:2rem auto; padding:0 1rem; }
+  h1 { font-weight:300; color:var(--blue); border-bottom:1px solid var(--line); padding-bottom:.4rem; }
+  .disclaimer { font-size:.8rem; color:#666; margin:.5rem 0 1.5rem; }
+  textarea { width:100%; box-sizing:border-box; padding:.6rem; border:1px solid var(--line); border-radius:6px; }
+  button { background:var(--blue); color:#fff; border:0; padding:.55rem 1.1rem; border-radius:6px; cursor:pointer; }
+  #answer { white-space:pre-wrap; margin-top:1.2rem; padding:1rem; border:1px solid var(--line); border-radius:6px; min-height:2rem; }
+  .cite { font-size:.85rem; border-top:1px solid var(--line); margin-top:1rem; padding-top:.6rem; }
+  .cite a { color:var(--blue); }
+  #status { font-size:.75rem; color:#888; float:right; }
+</style>
+<h1>AML/KYC RAG <span id="status"></span></h1>
+<p class="disclaimer">⚠️ Research aid over public regulatory text (31 CFR Chapter X). Not legal or compliance advice.</p>
+<textarea id="q" rows="3" placeholder="e.g. What is the currency transaction report threshold?"></textarea>
+<p><button onclick="ask()">Ask</button></p>
+<div id="answer"></div>
+<div id="cites" class="cite"></div>
+<script>
+fetch('/corpus_status').then(r=>r.json()).then(d=>{
+  document.getElementById('status').textContent =
+    d.indexed ? `${d.indexed} sections · as of ${d.as_of||'?'}` : 'corpus not built';
+});
+function ask(){
+  const q = document.getElementById('q').value.trim();
+  if(!q) return;
+  const ans = document.getElementById('answer'), cites = document.getElementById('cites');
+  ans.textContent = ''; cites.innerHTML = '';
+  fetch('/chat_stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})})
+   .then(resp=>{
+     const reader = resp.body.getReader(), dec = new TextDecoder(); let buf='';
+     (function pump(){ reader.read().then(({done,value})=>{
+       if(done) return;
+       buf += dec.decode(value,{stream:true});
+       let i; while((i=buf.indexOf('\n\n'))>=0){
+         const block = buf.slice(0,i); buf = buf.slice(i+2);
+         const ev=(block.match(/event: (.*)/)||[])[1], dl=(block.match(/data: (.*)/)||[])[1];
+         if(!dl) continue; const data=JSON.parse(dl);
+         if(ev==='token') ans.textContent += data.t;
+         else if(ev==='citations'){
+           cites.innerHTML = '<b>Citations</b><br>' + (data.citations||[]).map(c=>
+             `<a href="${c.url}" target="_blank">${c.citation}</a> — ${c.heading}`).join('<br>');
+         }
+       }
+       pump();
+     }); })();
+   });
+}
+</script>

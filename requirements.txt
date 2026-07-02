@@ -1,0 +1,10 @@
+# Phase 0–1 baseline. Pinning deferred to Phase 5 hardening.
+flask
+requests
+chromadb
+sentence-transformers     # also pulls the cross-encoder reranker
+numpy                     # used directly by the Phi-4 wrapper
+rank-bm25                 # hybrid retrieval (BM25 + dense RRF)
+onnxruntime-genai         # CPU generation. New machine w/ NVIDIA GPU:
+                          #   pip install onnxruntime-genai-cuda  (instead of this line)
+huggingface-hub
