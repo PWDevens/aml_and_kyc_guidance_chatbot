@@ -1,0 +1,400 @@
+/* Cognitus design system (Iteration 4 / D1).
+   Authored from the token table in .build/iter-4/spec.md (transcribed from
+   docs/UIUX_COGNITUS.md #1-#5). Plain CSS, no build step, no external assets.
+   Palette: Jefferson Blue (structural), Bronze (kickers/badges), Cyan (single
+   accent per view). Hairlines + whitespace only -- no shadows, no gradients,
+   no accent stripes. */
+
+:root {
+  --jefferson-blue: #232D4B;
+  --bronze: #7B6D45;
+  --cyan: #34CAFF;
+  --bg: #ffffff;
+  --bg-alt: #f7f8fa;
+  --hairline: #d9dee6;
+  --ink: #232D4B;
+  --ink-muted: #5b6472;
+
+  --font-heading: "Abadi Extra Light", "Abadi MT", "Segoe UI Light", "Helvetica Neue", Arial, sans-serif;
+  --font-body: Arial, "Helvetica Neue", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.55;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  font-weight: 200;
+  font-style: normal;
+  text-transform: none;
+  color: var(--jefferson-blue);
+  margin: 0 0 .5rem;
+}
+
+h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
+h2 { font-size: clamp(1.3rem, 3vw, 1.6rem); }
+h3 { font-size: 1.1rem; }
+
+p { margin: 0 0 1rem; }
+
+a { color: var(--jefferson-blue); }
+a:hover { color: var(--bronze); }
+
+/* Focus ring: cyan is an accent here, not body text/color-only signaling --
+   always paired with the browser's own outline shape. */
+a:focus-visible,
+button:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.eyebrow {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--bronze);
+  font-size: .78rem;
+}
+
+/* Standard accessible-label-only utility: keeps the element in the a11y tree
+   (readable by screen readers, reachable in DOM order) while removing it from
+   visual layout. Used by the ask box's <label for="q"> (D2-adjacent: the
+   visible prompt is the textarea placeholder; the real label stays for AT). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Header ---------- */
+.site-header {
+  border-bottom: 1px solid var(--hairline);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wordmark {
+  font-family: var(--font-heading);
+  font-weight: 200;
+  font-size: 1.25rem;
+  color: var(--jefferson-blue);
+  letter-spacing: .02em;
+}
+
+.health-dot {
+  width: .55rem;
+  height: .55rem;
+  border-radius: 50%;
+  background: var(--hairline);
+  display: inline-block;
+  margin-left: .5rem;
+}
+.health-dot[data-ok="true"] { background: var(--bronze); }
+
+/* ---------- Hero ---------- */
+.hero {
+  padding: 3rem 1.5rem 2rem;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.hero .eyebrow { display: block; margin-bottom: .75rem; }
+
+.hero h1 { margin-bottom: .75rem; }
+
+.hero .subhead {
+  font-size: 1.05rem;
+  color: var(--ink-muted);
+  max-width: 60ch;
+  margin: 0 0 1.75rem;
+}
+
+/* ---------- Corpus status strip ---------- */
+.corpus-strip {
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  padding: .75rem 1.5rem;
+  font-size: .85rem;
+  color: var(--ink-muted);
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1.25rem;
+}
+
+.corpus-strip .stat strong {
+  color: var(--jefferson-blue);
+  font-variant-numeric: tabular-nums;
+}
+
+.corpus-strip[data-state="unavailable"] { color: var(--ink-muted); font-style: italic; }
+
+/* ---------- Main / ask box ---------- */
+main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.ask-box {
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: .5rem;
+}
+
+.ask-box textarea {
+  width: 100%;
+  border: none;
+  resize: vertical;
+  font: 1rem/1.5 var(--font-body);
+  color: var(--ink);
+  padding: 0;
+  min-height: 3.5rem;
+}
+.ask-box textarea:focus { outline: none; }
+
+.ask-box .ask-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: .75rem;
+  border-top: 1px solid var(--hairline);
+  padding-top: .75rem;
+}
+
+.ask-hint {
+  font-size: .8rem;
+  color: var(--ink-muted);
+  min-height: 1.1em;
+}
+
+button.primary {
+  background: var(--jefferson-blue);
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  padding: .6rem 1.25rem;
+  font: 600 .9rem var(--font-body);
+  cursor: pointer;
+}
+button.primary:hover { background: #1a2338; }
+button.primary:disabled { background: var(--hairline); color: var(--ink-muted); cursor: default; }
+
+/* ---------- Answer + citation layout ---------- */
+.answer-wrap {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 1.75rem;
+}
+
+@media (min-width: 900px) {
+  .answer-wrap {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.answer-panel { min-width: 0; }
+
+#answer {
+  font-family: var(--font-body);
+  font-weight: 400;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  min-height: 1.5em;
+}
+
+/* Streaming caret: the single cyan accent for this state (AC-3, AC-6). */
+.caret {
+  display: inline-block;
+  width: .55em;
+  height: 1em;
+  background: var(--cyan);
+  margin-left: .1em;
+  vertical-align: text-bottom;
+  animation: caret-blink 1s steps(2, jump-none) infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+
+.as-of-stamp {
+  font-size: .8rem;
+  color: var(--ink-muted);
+  margin-top: .75rem;
+  border-top: 1px solid var(--hairline);
+  padding-top: .5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  align-items: center;
+}
+
+/* FAQ marker: quiet text badge, not a colored banner (AC-10). Conveyed by
+   text ("from FAQ"), not color alone. */
+.faq-marker {
+  font-size: .75rem;
+  color: var(--bronze);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  padding: .1rem .4rem;
+}
+
+.answer-note {
+  font-size: .82rem;
+  color: var(--ink-muted);
+  margin-top: .5rem;
+}
+
+/* ---------- Decline state (AC-9) ---------- */
+.decline-region {
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--bronze);
+  background: var(--bg-alt);
+  border-radius: 3px;
+  padding: .85rem 1rem;
+  margin-top: 1rem;
+  font-size: .95rem;
+  color: var(--ink);
+}
+.decline-region .eyebrow { margin-bottom: .35rem; }
+
+/* ---------- Citation panel ---------- */
+.citation-panel { min-width: 0; }
+
+.citation-panel h2 { font-size: 1rem; margin-bottom: .75rem; }
+
+.citation-card {
+  border-top: 1px solid var(--hairline);
+  padding: .75rem 0;
+}
+.citation-card:first-of-type { border-top: none; }
+
+.source-badge {
+  display: inline-block;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .7rem;
+  color: var(--bronze);
+  margin-bottom: .25rem;
+}
+
+.citation-card .citation-id {
+  font-weight: 600;
+  color: var(--jefferson-blue);
+  overflow-wrap: break-word;
+}
+
+.citation-card .citation-heading {
+  color: var(--ink-muted);
+  font-size: .88rem;
+  margin: .15rem 0;
+  overflow-wrap: break-word;
+}
+
+.citation-card .citation-as-of {
+  font-size: .78rem;
+  color: var(--ink-muted);
+}
+
+.citation-card a {
+  font-size: .85rem;
+  word-break: break-all;
+}
+
+.citation-empty-note {
+  font-size: .85rem;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+/* ---------- Intent chip (D2: hidden unless data-driven) ---------- */
+.intent-chip {
+  display: none;
+  font-size: .75rem;
+  color: var(--ink-muted);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  padding: .1rem .4rem;
+}
+.intent-chip[data-visible="true"] { display: inline-block; }
+
+/* ---------- Footer ---------- */
+footer.disclaimer {
+  border-top: 1px solid var(--hairline);
+  padding: 1rem 1.5rem 2rem;
+  max-width: 880px;
+  margin: 0 auto;
+  font-size: .8rem;
+  color: var(--jefferson-blue);
+}
+
+/* ---------- Loading state ---------- */
+.loading-rule {
+  height: 2px;
+  background: var(--hairline);
+  overflow: hidden;
+  margin-top: .5rem;
+  display: none;
+}
+.loading-rule[data-active="true"] { display: block; }
+.loading-rule::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: var(--cyan);
+  animation: loading-sweep 1.2s ease-in-out infinite;
+}
+@keyframes loading-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* ---------- Responsive (AC-11) ---------- */
+@media (max-width: 640px) {
+  .hero { padding: 2rem 1rem 1.5rem; }
+  .corpus-strip { padding: .6rem 1rem; }
+  main { padding: 1.5rem 1rem 2rem; }
+  .site-header { padding: .85rem 1rem; }
+  footer.disclaimer { padding: .85rem 1rem 1.5rem; }
+}
+
+/* Respect reduced-motion preferences for the caret/loading sweep. */
+@media (prefers-reduced-motion: reduce) {
+  .caret, .loading-rule::after { animation: none; }
+}
+
+/* Scroll-reveal (cognitus.js progressive enhancement). Content is visible by
+   default -- .reveal-pending is only added by JS right before observing, so
+   JS-disabled/failed-load leaves everything at full opacity. */
+.reveal-pending { opacity: 0; transform: translateY(8px); transition: opacity .4s ease, transform .4s ease; }
+.reveal-visible { opacity: 1; transform: none; }

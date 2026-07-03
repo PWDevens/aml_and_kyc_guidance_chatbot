@@ -5,6 +5,60 @@ and phase. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the overall plan.
 
 ---
 
+## Phase 4, Iteration 1 — Cognitus UI/UX restyle
+
+**Date:** 2026-07-02 | **Spec:** [`.build/iter-4/spec.md`](.build/iter-4/spec.md) |
+**Results:** [`.build/iter-4/changes.md`](.build/iter-4/changes.md)
+
+### UI/UX redesign
+
+- **Cognitus design system applied to frontend.** `src/app/static/index.html` rebuilt with semantic landmarks (`<header>`, `<main>`, `<aside>`, `<footer>`), visual hierarchy using Jefferson-Blue headings, Bronze eyebrow kickers / source badges, and a single Cyan accent (streaming caret). Hairline rules + whitespace only; no shadows or gradients.
+
+- **Interaction states rendered.** Streaming token-by-token display (cyan caret during stream, removed on `done`); citation panel with Bronze source badges (`31 CFR`, `FinCEN`, `FFIEC`), real click-through links (`target="_blank" rel="noopener"`), and `as_of` stamps. Verifier-decline state shows calm, branded message when `verification.declined === true`. FAQ-hit marker displays subtly when `source_tier === "faq"` (D4 backend addition).
+
+- **Responsive layout.** Citation panel is a right rail on desktop (≥900px), collapses below the answer on narrow screens (≤640px). Full keyboard operability; all interactive elements native (`<button>`, `<textarea>`, `<a>`). WCAG AA contrast verified on all color pairs (13.56:1 Jefferson Blue on white, 5.10:1 Bronze on white); cyan never used for body text or as sole status signal.
+
+### Static assets and routing
+
+- **`src/app/static/cognitus.css`** — Cognitus tokens as CSS custom properties (`:root` palette). Styles for header/wordmark, hero split, corpus-status strip, ask box, answer region with streaming caret, citation panel/cards, source badges, decline region, FAQ marker, focus rings, loading sweep, disclaimer footer, and responsive breakpoints. No external fonts (Abadi ExtraLight unavailable; system-font fallback stack used per D5).
+
+- **`src/app/static/cognitus.js`** — progressive enhancement: animated corpus-status counter (`Cognitus.animateCount`, respects `prefers-reduced-motion`) and scroll-reveal for `[data-reveal]` elements. Both gracefully degrade on unsupported browsers or failed load. No SSE logic; no external dependencies.
+
+- **`src/app/static/app.js`** — SSE client extracted from inline HTML. Preserves the original `fetch('/chat_stream')` + `reader.read()` + `\n\n`-split + `event:`/`data:` regex loop exactly. Extended to: dispatch `verification` event (AC-9, decline state); read `source_tier` off `citations` (AC-10, FAQ marker); render cyan streaming caret; handle 400 empty-question response without SSE parsing (edge case 6); render citation cards with source-badge mapping. Exposes `window.CognitusRender.{citations,verification}` as pure render functions (testing hooks per spec).
+
+- **Three new static routes in `src/app/api.py`.** `GET /cognitus.css`, `GET /cognitus.js`, `GET /app.js` serve the real static files via `send_from_directory(STATIC, ...)` (same pattern as `GET /`, identical path-traversal protection). Replaces an interim workaround that had been inlining CSS/JS into `index.html`, eliminating duplication.
+
+### Backend addition (FAQ marker signal)
+
+- **`src/app/api.py`, FAQ fast-path only.** Added `"source_tier": "faq"` to the `citations` SSE event on the Tier-1 FAQ fast-path (`chat_stream.gen()` FAQ branch). Non-FAQ paths (`_gen_iter2_path`, `_gen_orchestrated_path`) are byte-for-byte unchanged, preserving the AC-2/D9 byte-identical collapse guarantee. UI shows FAQ marker when `source_tier === "faq"`, hides it otherwise.
+
+### Accessibility fixes (from UI/UX review)
+
+- **Fixed ARIA streaming anti-pattern.** Removed `aria-live="polite"` from `#answer` (which was announced on every token mutation); added a new visually-hidden `<span id="answer-status" role="status" aria-live="polite">` that announces once at `done` or on verification-declined (one completion announcement, not a stream of fragments).
+
+- **Added missing `.visually-hidden` utility class** (`cognitus.css`) for accessible-but-visually-hidden labels (ask-box label now correctly hidden from visual layout but present in accessibility tree).
+
+- **Associated ask-hint with input** via `aria-describedby="ask-hint"` so the hint is reachable as the field's accessible description.
+
+### Testing
+
+- `tests/test_iter4_static_and_source_tier.py` — 16 new tests covering: three new static routes (200 + content-type + byte-for-byte match vs disk + path-traversal rejection for each); `source_tier` field present/absent on all four non-FAQ branches; HTML semantic structure (exactly one h1/header/main/footer/aside).
+- `tests/test_chat_stream_orchestration.py` — one-line update to FAQ path test to include `"source_tier": "faq"` in expected dict.
+- Full suite: **139 passed** (123 pre-existing + 16 new); no regressions.
+
+### Definition of done
+
+- ✅ AC-1..AC-10, AC-12 verified (semantic landmarks, Cognitus tokens, one-accent max, hero+corpus strip, streaming, citation cards, as_of stamp, verifier-decline, FAQ marker, keyboard operability, contrast).
+- ✅ AC-11 responsive: computed grid-template-columns + scrollWidth checks confirm zero horizontal scroll at 375px / 1280px.
+- ⚠️ AC-3 (one-accent per view), AC-4 (hero visual), AC-5 (strip render), AC-6 (caret visual), AC-7 (card render), AC-8 (stamp render), AC-9 (decline visual), AC-11 (responsive visual), AC-12 (contrast/keyboard): **manual verification only** (visual regression tooling out of scope per spec's "no build step, no new dependency").
+- ⚠️ **Three required README screenshots (landing, answer+citations desktop/mobile, verifier-decline) not captured as image files.** See "Screenshots" section below. Tooling limitation in this environment; verification performed via DOM/computed-style inspection instead (changes.md documents the workaround).
+
+### Deferred
+
+- **"What changed" timeline view (D3).** No version-ledger data exists (change_resolver was deferred in Phase 3). Spec's conditional acceptance ("if change_resolver shipped; otherwise note as deferred with reason") satisfied — deferred with reason, not built.
+
+---
+
 ## Phase 3, Iteration 1 — Local orchestration + semantic FAQ cache
 
 **Date:** 2026-07-02 | **Spec:** [`.build/iter-3/spec.md`](.build/iter-3/spec.md) |

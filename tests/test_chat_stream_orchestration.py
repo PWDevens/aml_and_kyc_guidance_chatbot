@@ -140,7 +140,11 @@ def test_faq_tier1_hit_skips_retrieval_and_generation_entirely():
             tokens = "".join(d_["t"] for e, d_ in events if e == "token")
             assert tokens == "Pre-verified answer."
             cites = next(d_ for e, d_ in events if e == "citations")
-            assert cites == {"citations": hit["citations"], "as_of": hit["as_of"]}
+            # Iteration 4 (D4): FAQ fast-path additively gains "source_tier":
+            # "faq" on the citations event so the UI can show a "from FAQ"
+            # marker (AC-10). Non-FAQ paths are untouched (see
+            # test_chat_stream_cache.py / other orchestration tests).
+            assert cites == {"citations": hit["citations"], "as_of": hit["as_of"], "source_tier": "faq"}
             mock_retrieve.assert_not_called()
             mock_stream.assert_not_called()
 

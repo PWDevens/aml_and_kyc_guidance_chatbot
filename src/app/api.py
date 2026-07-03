@@ -39,6 +39,21 @@ def index():
     return send_from_directory(STATIC, "index.html")
 
 
+@app.get("/cognitus.css")
+def cognitus_css():
+    return send_from_directory(STATIC, "cognitus.css")
+
+
+@app.get("/cognitus.js")
+def cognitus_js():
+    return send_from_directory(STATIC, "cognitus.js")
+
+
+@app.get("/app.js")
+def app_js():
+    return send_from_directory(STATIC, "app.js")
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True, "rag_mode": CONFIG.rag_mode, "generate": models.available() if CONFIG.generate else False}
@@ -180,7 +195,7 @@ def chat_stream():
             hit = faq_matcher.match(CONFIG, framed["framed_query"], framed["hints"])
             if hit is not None:
                 yield _sse("token", {"t": hit["answer"]})
-                yield _sse("citations", {"citations": hit["citations"], "as_of": hit["as_of"]})
+                yield _sse("citations", {"citations": hit["citations"], "as_of": hit["as_of"], "source_tier": "faq"})
                 yield _sse("done", {})
                 return
 

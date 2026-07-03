@@ -135,17 +135,26 @@
   separate count index"). Ceiling: add a maintained count index if the corpus grows large.
 
 ## Next
-- **Iteration 4 — Phase 4: Cognitus UI/UX** (per `.build/backlog.md` §"Iteration 4 —
-  Phase 4: Cognitus UI/UX", driven by `docs/UIUX_COGNITUS.md`). Iteration 3 shipped clean
-  at its re-gate (2026-07-02, below). Iteration 4 opens the deferred UI scope:
-  `cognitus.css`/`cognitus.js` tokens applied to `src/app/static/`, hero + chat/ask
-  surfaces per the Cognitus design spec. Live decision to revisit at the top of iter-4:
-  whether to flip the `ORCHESTRATION` default to `true` (see the iter-3 open-decision note
-  below) with a latency-inclusive end-to-end measurement.
-  - **F2 (CIP completeness)** shipped in iter-3's `answer_verifier` (mandatory-element
-    completeness check, AC-5) — closed, no longer carried.
+- **Iteration 5 — Phase 5: hardening & release** (per `.build/backlog.md` §"Iteration 5 —
+  Phase 5: hardening & release", ROADMAP Phase 5 + Definition of done §6). Iterations 1–4
+  have all shipped at their gates. Iteration 5 scope: test suite coverage across
+  loaders/parsers + retrieval factory dispatch + RRF + ETL rules + each orchestration skill
+  + FAQ matcher; `requirements.lock` (or pinned `requirements.txt`) for reproducibility;
+  Dockerfile + one-command-run docs; README updated with eval results + demo walkthrough;
+  clean-machine reproducibility check (documented, re-run if feasible). **Out of scope for
+  iter-5:** any actual `git push`/deploy/publish/CI-provider account setup (document as
+  manual follow-ups, do not perform); GitHub Actions workflow *files* may be authored but
+  never triggered/pushed/connected to a real account.
+  - **Live decision now due at iter-5:** whether to flip the `ORCHESTRATION` default to
+    `true` — iter-4 explicitly did NOT take this up (D6, out of UI scope). It remains a
+    latency-inclusive end-to-end `/chat_stream` measurement decision (see the iter-3
+    open-decision note below), unresolved and carried forward.
+  - **Screenshot capture (iter-4 debt):** the three README screenshots (landing, answer+
+    citations desktop/mobile, verifier-decline) still need manual capture with working
+    screenshot tooling — steps are already in the README's "Screenshots" section.
   - **eCFR removed-section deletion (R4b)** — still open (deferred D15); not required by
-    Phase 4, carry forward.
+    Phase 4, carry forward. Candidate for iter-5 test-coverage or a bounded follow-up.
+  - **F2 (CIP completeness)** shipped in iter-3's `answer_verifier` — closed, not carried.
 - **Natural later-iteration candidate (not for Iteration 3 unless scoped in):** the measured numbers favor
   `hybrid_rerank` (avg rank 1.12, term_recall 1.00 vs naive's 0.92). AC-4 was scoped to a
   naive-vs-hybrid decision only, so promoting `hybrid_rerank` to default is a *new*
@@ -303,13 +312,84 @@ Carried forward from `.build/iter-3/changes.md`; all judged sound scope calls at
 - **R4b (eCFR removed-section chunk deletion) — deferred (D15).** Still open from iter-2's
   accepted debt; not required by any iter-3 AC. Unchanged.
 
+## Iteration 4 — senior-PM gate: SHIP (2026-07-02; `.build/iter-4/verdict.md`)
+Phase 4 (Cognitus UI/UX restyle — frontend-only + one additive backend FAQ field). All
+AC-1..AC-12 demonstrably true. Three actors touched the static files in sequence
+(senior-dev build, orchestrator static-route fix, UI/UX reviewer ARIA fix); the **final**
+combined state was verified coherent at the gate, not just each patch in isolation. Every
+load-bearing claim checked against the actual final source, not on the reports' word:
+- **Static-route security (the trust boundary):** read `api.py:42-54` — all three routes
+  (`/cognitus.css`, `/cognitus.js`, `/app.js`) are zero-argument functions serving
+  **hardcoded filenames** via `send_from_directory(STATIC, "<literal>")`. No variable path
+  param, no `<path:>` converter — arbitrary-path traversal is impossible *by construction*,
+  not merely because a test passed. `static_folder=None` means no implicit static handler
+  either. Traversal tests are correct defense-in-depth on top. No secrets. Sound.
+- **D9 byte-identical collapse:** read all three branches — only the FAQ fast-path
+  (`api.py:198`) carries `"source_tier": "faq"`; `_gen_iter2_path` (:95) and
+  `_gen_orchestrated_path` (:127/:150/:179) emit two-key dicts, no `source_tier`. Four new
+  tests assert key *absence* (not `None`) on all four non-FAQ branches. Preserved.
+- **ARIA fix:** `#answer` has no `aria-live`; the new visually-hidden `#answer-status`
+  (`role=status aria-live=polite`) updates **exactly once** per answer — at `done`
+  (`app.js:303-305`, guarded so it doesn't clobber a decline message) or on decline
+  (`app.js:171`), never per token. Correctly implemented.
+- **Scope:** both out-of-literal-file-list edits are legitimate spec/reality-mismatch
+  corrections (same class as iter-2's "removed section" fix), not scope creep: the
+  static-route fix resolves that `static_folder=None` would 404 the spec's own required
+  files; the ARIA/`.visually-hidden`/`aria-describedby` fixes address the spec's
+  non-negotiable a11y baseline (the missing `.visually-hidden` class was a real bug — the
+  label rendered visible/unstyled). `git diff --stat` confirms no "NOT to touch" path
+  (`src/rag/**`, `src/etl/**`, `requirements.txt`, `.github/workflows`, Dockerfile) changed;
+  no new Python dependency; `.claude/launch.json` is a harmless dev-tooling file.
+- **Manual visual-AC verification accepted:** for a no-build-step/no-visual-regression
+  iteration, the evidence clears "demonstrably true — specific, reproducible": contrast
+  **independently recomputed** by the reviewer (Jefferson Blue 13.56:1, Bronze 5.10:1,
+  Bronze-on-alt 4.80:1, ink-muted 5.98:1, Cyan-on-white 1.90:1 → cyan correctly never text,
+  grepped to 3 non-text call sites), real SSE round-trips through the actual UI, computed
+  `grid-template-columns` + `scrollWidth===innerWidth` at 375/1280px, synthetic-event render
+  hooks (`CognitusRender.*`) exactly as the spec's Testing-hooks section sanctions.
+- **Suite re-run at the gate:** `py -3.12 -m pytest tests/ -q` → **139 passed in 154.73s**,
+  0 failed (matches test-results.md: 123 pre-existing + 16 new). New tests have real teeth
+  (byte-for-byte disk-vs-route, traversal rejection ×3 routes, `source_tier` absence ×4
+  branches, `assert "<style>" not in html` re-inlining regression guard). No new `ponytail:`
+  text in any new/edited static file; no `box-shadow`/gradient in the CSS. **Iteration 4
+  ships.**
+
+## Accepted tech-debt from Iteration 4 (bounded, with upgrade paths — carry forward)
+- **Three README screenshots not captured as image files** (landing/hero+corpus strip;
+  answer+citations desktop & mobile; verifier-decline). Reproducible preview-tool screenshot
+  timeout across two independent server instances — environment/tooling limitation, not a
+  page defect (page loads/runs correctly, confirmed via DOM/computed-style inspection + a
+  live end-to-end `/chat_stream` exchange). Honestly disclosed at every layer
+  (changes.md, test-results.md, docs.md, README "Screenshots" section, CHANGELOG DoD); **no
+  fabricated/placeholder images added**; alternative specific evidence substitutes credibly.
+  Judged **acceptable, non-blocking** — the DoD's intent (the visual states are true) is met
+  by reproducible specific evidence. Ceiling: capture the three shots manually
+  (`python -m src.app.asgi`; use the `CognitusRender.verification()` hook for the decline
+  shot) at the next opportunity with working screenshot tooling; steps already in the README.
+- **`#health-dot` `title` not reliably AT-exposed** (frontend-review.md deferral #1). Element
+  is `aria-hidden="true"`, explicitly optional/supplementary per spec, no unique info.
+  Ceiling: promote to a real labeled element only if a future iteration makes system health a
+  user-facing non-decorative status.
+- **`.eyebrow` class serves both real `<h2>` section labels and decorative `<span>`s**
+  (frontend-review.md deferral #2). Semantics correct today. Ceiling: split into `.eyebrow`
+  vs `.eyebrow-heading` if non-heading eyebrow uses proliferate; not worth it at 2 instances.
+- **Visual ACs (AC-3/4/5-render/6-caret/7-render/8-render/9-render/11/12) are manual-only** —
+  no automated visual-regression coverage. Acceptable for this dependency-light, no-build-step
+  iteration; the backend contracts underlying them (SSE shapes, `/corpus_status`, static-file
+  serving) ARE now automated. Ceiling: add a headless-browser/visual-regression harness only
+  if/when the project takes on a build step.
+- **Non-blocking note (no fix required):** CHANGELOG's DoD block says "AC-1..AC-10, AC-12
+  verified" then lists several of those same ACs under "manual verification only" — cosmetic
+  phrasing wrinkle; underlying evidence is honest (nothing overclaimed as automated). Not
+  worth a re-gate.
+
 ## Blockers
-- **None open.** Iteration 3's RF-1 (the prior NEEDS WORK gate) is resolved and durably
-  re-verified at the re-gate (2026-07-02): 29/29 `stale=0` confirmed by the gate's own SQL
-  query immediately after the gate's own suite run (and after a second live-test run). The
-  real root cause (test `faq_db_path` isolation gap, not just a stale db) was found and
-  fixed. Iterations 1, 2, and 3 have all shipped at their gates. Iteration 4 (Phase 4:
-  Cognitus UI/UX) is clear to open.
+- **None open.** Iterations 1, 2, 3, and 4 have all shipped at their gates. Iteration 3's
+  RF-1 (the prior NEEDS WORK gate) was resolved and durably re-verified at its re-gate
+  (2026-07-02): 29/29 `stale=0` confirmed by the gate's own SQL query immediately after its
+  own suite run (and after a second live-test run); the real root cause (test `faq_db_path`
+  isolation gap) was found and fixed. Iteration 5 (Phase 5: hardening & release) is clear to
+  open.
 
 ## General observations for future iterations (cross-cutting lessons)
 - **Test fixtures must isolate ALL config paths any subsystem they exercise may write to —

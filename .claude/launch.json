@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "flask-dev",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.12", "-m", "src.app.asgi"],
+      "port": 8123,
+      "env": { "PORT": "8123" }
+    }
+  ]
+}

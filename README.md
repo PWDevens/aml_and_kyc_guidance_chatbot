@@ -32,13 +32,14 @@ cache, Flask/SSE serving, Docker, and a tagged version progression). It then
 
 ## Status
 
-✅ **Phase 0–3 complete.** Implemented and tested:
+✅ **Phase 0–4 complete.** Implemented and tested:
 - **Phase 0:** eCFR loader, naive retrieval, generation, Flask+SSE app.
 - **Phase 1:** Multi-mode retrieval backbone, FinCEN Federal Register corpus, section-aware chunking, exact-match answer cache.
 - **Phase 2:** Trigger-based ETL (watchers for FedReg + eCFR, rules engine R1–R4, incremental upsert-by-citation, provenance ledger).
 - **Phase 3:** Local orchestration layer (query framing, intent classification, retrieval routing) + semantic FAQ cache (Tier-1, 29 curated entries). Orchestration OFF by default pending latency-inclusive measurement; FAQ cache ON by default.
+- **Phase 4:** Cognitus design system UI: Jefferson-Blue structural color, Bronze eyebrow kickers / source badges, Cyan streaming caret accent, hairline rules. All interaction states rendered (streaming, citations, verifier-decline, FAQ-hit marker). Three new static-asset routes for `cognitus.css`, `cognitus.js`, `app.js`.
 
-See [CHANGELOG](CHANGELOG.md) for per-iteration details. Phases 4–5 (Cognitus UI, CI/Docker) follow the [roadmap](docs/ROADMAP.md).
+See [CHANGELOG](CHANGELOG.md) for per-iteration details. Phase 5 (CI/Docker/testing infra) follows the [roadmap](docs/ROADMAP.md).
 
 ---
 
@@ -102,6 +103,28 @@ The full product development plan lives in [`docs/`](docs/):
 ```
 
 Full detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+---
+
+## Screenshots (Cognitus UI)
+
+The front end (`src/app/static/`) is restyled with the **Cognitus** design
+system — Jefferson-Blue structural color, Bronze eyebrow kickers / source
+badges, a single Cyan accent (streaming caret), hairline rules, no
+shadows/gradients. See [`docs/UIUX_COGNITUS.md`](docs/UIUX_COGNITUS.md) for
+the full design spec.
+
+> **Note:** the three required screenshots (landing/hero + corpus-status
+> strip, answer + citation panel at desktop and mobile widths, and the
+> verifier-decline state) could not be captured as image files in the
+> environment this iteration was built in — the available headless-preview
+> tooling's screenshot capture consistently failed while the page itself
+> loaded and ran correctly (confirmed via DOM/computed-style inspection and
+> a live end-to-end `/chat_stream` exchange). No placeholder images have
+> been added. See `.build/iter-4/changes.md` for the verification that was
+> performed in place of pixel screenshots, and capture these three
+> screenshots manually (open `python -m src.app.asgi` and visit
+> `http://127.0.0.1:8000/`) before/at the next opportunity.
 
 ---
 
