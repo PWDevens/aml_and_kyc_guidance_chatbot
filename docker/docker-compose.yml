@@ -1,0 +1,30 @@
+# -----------------------------------------------------------------------------
+# AUTHORED, NOT BUILT/RUN IN THIS ENVIRONMENT (docker-compose is unavailable
+# here too — `docker-compose --version` -> command not found). Reviewed for
+# internal consistency with the root Dockerfile and the README "Docker"
+# section; never executed. Verify on a Docker-enabled host.
+#
+# Build context is the repo root (one level up from this file), since the
+# Dockerfile and .dockerignore both live there.
+# -----------------------------------------------------------------------------
+services:
+  aml-kyc-rag-chatbot:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      # Override any RagConfig knob here (src/rag/config.py), e.g.:
+      # - RAG_MODE=hybrid_rerank
+      # - ORCHESTRATION=false   # matches the shipped default (D6); do not
+      #                          flip without reading README "Results".
+    # The Dockerfile builds the index + FAQ db INSIDE the image at build time
+    # (see Dockerfile comment), so no volume mount is required for a basic
+    # run. If you'd rather reuse an already-built data/ directory from the
+    # host (skips the in-image rebuild, faster restarts, but requires you to
+    # have run `python -m scripts.build_index` / `seed_faq` on the host
+    # first), uncomment:
+    # volumes:
+    #   - ../data:/app/data

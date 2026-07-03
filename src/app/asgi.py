@@ -1,5 +1,5 @@
 """Entry point. Windows: `python -m src.app.asgi` (Flask dev server).
-ponytail: Hypercorn/ASGI wrapping deferred to Phase 5 packaging."""
+Deliberately simple: Hypercorn/ASGI wrapping deferred to Phase 5 packaging."""
 from .api import app
 
 if __name__ == "__main__":

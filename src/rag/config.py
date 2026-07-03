@@ -1,6 +1,6 @@
 """RagConfig — env-driven knobs. Only what Phase 0 actually reads.
 More vars (RERANK, ORCHESTRATION, FAQ_CACHE...) land in the phase that uses them.
-ponytail: one dataclass from env, no config framework."""
+Deliberately minimal: one dataclass read from env, no config framework."""
 from __future__ import annotations
 import os
 from dataclasses import dataclass

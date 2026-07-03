@@ -5,6 +5,170 @@ and phase. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the overall plan.
 
 ---
 
+## Phase 5, Iteration 1 — Hardening & release (v1.0)
+
+**Date:** 2026-07-02 | **Spec:** [`.build/iter-5/spec.md`](.build/iter-5/spec.md) |
+**Results:** [`.build/iter-5/changes.md`](.build/iter-5/changes.md)
+
+This is the final planned iteration. It turns the working-but-unhardened
+Phase 0–4 build into a tested, pinned, documented v1.0 release, honestly
+distinguishing what was verified on this machine from what was authored but
+could not be executed here (no Docker install, no git remote).
+
+### Dependency pinning
+
+- **`requirements.lock`** (new) — full `pip freeze` of the actual working
+  Python 3.12.10 environment this build was developed and tested against.
+  Authoritative install target for the fresh-venv check, Docker, and CI.
+- **`requirements.txt`** — direct dependencies pinned to `==` (previously
+  unpinned; header said pinning was "deferred to Phase 5"). `onnxruntime-genai`
+  pinned to `0.14.1`, the version `pip freeze` reports installed and proven
+  working throughout this build (progress.md documents the 0.5.2→0.14.1 API
+  migration fixed mid-build).
+- **Verified against a genuinely fresh venv** (new directory, not the working
+  one): `pip install -r requirements.lock` installed cleanly, then
+  `pytest tests/ -q --deselect tests/test_etl_fedreg_live.py` → **145 passed**
+  in that fresh venv.
+
+### Test coverage (ROADMAP §4 gaps closed)
+
+- **`tests/test_iter5_coverage.py`** (new, 7 tests) — the two genuinely-missing
+  ROADMAP §4 "Unit" items, confirmed absent by grep before writing: (1)
+  retrieval `factory.py` mode-dispatch table, including the `hybrid_rerank`
+  branch and the invalid-mode `ValueError` path (previously only the default
+  `naive` mode was ever exercised, implicitly, via `CONFIG`); (2) RRF fusion
+  math (`_hybrid_pool`) — a direct test independently recomputes standard RRF
+  over the same dense/BM25 rankings the function fuses and asserts the
+  output matches exactly, plus the iter-1 "keyed on chunk `id`, not
+  `citation`" property. `citation_formatter` was already directly covered
+  (`test_orchestration_skills.py`) — not duplicated.
+- Full suite: **146 passed** (139 pre-existing + 7 new), 0 failed.
+
+### Real latency numbers (published, see README "Results")
+
+Measured against the real running app (in-process Flask test client, real
+request path, no mocking): FAQ Tier-1 hit warm median **0.017s** (target
+<1s — cleared by ~2 orders of magnitude); exact-match cache hit warm median
+**0.025s**; fresh generation (retrieve→generate, CPU) **14.7s–30.4s**
+(median 17.7s), inside the PRD's 10–60s band. Method documented in
+`scripts/measure_latency.py` and `.build/iter-5/test-results.md`.
+
+### Internal shorthand comments reworded (AC-4)
+
+A non-standard internal-shorthand marker previously used in 13 shipping
+files' rationale comments (`scripts/eval.py`, `src/rag/config.py`,
+`tests/test_smoke.py`, `scripts/build_index.py`,
+`src/rag/indexing/builder.py` ×2, `src/rag/retrieval/factory.py` ×2,
+`src/rag/llm/models.py` ×2, `src/rag/indexing/loaders/ecfr.py`,
+`src/app/api.py` ×2, `src/app/asgi.py`) is removed. Comments reworded to
+plain design-rationale text with the same meaning — zero behavior change,
+confirmed by a full green suite re-run immediately after the reword and
+before any other Phase 5 change. A repo-wide scan of `src/`, `scripts/`,
+`tests/`, `docs/`, `README.md`, `CHANGELOG.md`, `requirements*`, and the new
+Docker/CI artifacts now confirms zero remaining occurrences of that marker
+(process-history directories excluded, unchanged, per project convention).
+
+### From-scratch reproducibility (AC-5)
+
+`python -m scripts.build_index` + `python -m scripts.seed_faq`, run against
+**scratch** `CHROMA_PATH`/`FAQ_DB_PATH`/`ANSWER_CACHE_PATH`/`ETL_STATE_PATH`
+overrides (never the real `data/`), produced a working 402-chunk index +
+29-entry FAQ store from nothing. Deterministic suite green against that
+scratch index (145 passed); a real `/chat_stream` round-trip and a full
+`scripts.eval` run (hit@5=1.00, term_recall=0.92) both succeeded against it.
+Real `data/` confirmed untouched (475-chunk chroma count, 29-entry faq.db,
+both unchanged) before and after.
+
+### Eval numbers re-confirmed (AC-6)
+
+Re-run against the live corpus: `RAG_MODE=naive` hit@5=**0.92**,
+term_recall=**0.96**; `ORCHESTRATION=true` vs `=false` delta
+**+0.04/+0.04** — both match the historical Phase 3 numbers exactly (stable
+corpus + gold set). `ORCHESTRATION` stays `false` this release (D6); the
+published evidence supports flipping it as a follow-up, documented in the
+README "Results" section.
+
+### Docker + CI artifacts (authored, not executed — AC-8/AC-9)
+
+- **`Dockerfile`** (new, repo root) — `python:3.12-slim`, installs from
+  `requirements.lock`, builds the index + seeds the FAQ db at image-build
+  time (the index is gitignored/not committed), runs
+  `python -m src.app.asgi` on port 8000.
+- **`docker/docker-compose.yml`** (new) — one-command `docker compose up`
+  wrapper; documents an alternative volume-mount strategy in a comment for
+  reusing a host-built `data/` instead of rebuilding in-image.
+- **`.dockerignore`** (new) — excludes `data/chroma`, `*.db`, `.venv`,
+  `.git`, `__pycache__`, `.build`, `.pipeline`.
+- **`.github/workflows/ci.yml`** (new) — checkout, Python 3.12 setup,
+  `pip install -r requirements.lock`, build the index + seed the FAQ db,
+  `pytest tests/ -q`; a documented (unauthenticated, non-pushing) Docker
+  build job per ROADMAP §4's intended pipeline. The index-build step was
+  added during this iteration's independent review: ROADMAP §4's "CI does
+  not rebuild the index" assumes a Git-LFS-committed index (the sibling
+  fedacq project's pattern), which this project explicitly doesn't use —
+  the index is gitignored, so a runner with no committed index needs to
+  build one before the suite can pass.
+- **All four are honestly marked untested at every layer** (top-of-file
+  comments, README, `changes.md`, `test-results.md`): this machine has no
+  Docker install and this repo has no git remote / Actions runner, so none
+  of these has ever actually built or run. Reviewed for internal correctness
+  and consistency with the locally-verified Quickstart steps only.
+
+### README & CHANGELOG
+
+- **README** — added Quickstart/Run (the exact commands verified in AC-5),
+  a Docker subsection labeled untested, a Results section with the real
+  AC-3 latency table and AC-6 eval table, and a consolidated v1.0 Status
+  section replacing the "Phase 0–4" stopping point. Screenshot note
+  re-attempted and re-dated (still deferred — see below).
+- **CHANGELOG** — this entry.
+- **`LICENSE`** (new) — MIT, matching the promise already in README
+  "License & attribution".
+
+### Screenshot re-attempt (D5)
+
+One genuine capture attempt was made this iteration with the same
+preview/screenshot tooling used in iteration 4: the app server starts
+cleanly, every route (`/`, `/cognitus.css`, `/cognitus.js`, `/app.js`,
+`/corpus_status`, `/healthz`) returns 200 OK, and a full accessibility-tree
+snapshot confirms the page renders correctly end to end (header, hero, ask
+box, answer/citations regions, footer disclaimer). The screenshot capture
+call itself timed out twice in a row (30s each) — the same failure mode
+iteration 4 hit. This is judged a tooling limitation in this environment,
+not a page defect. The honest deferral note in the README is kept, with an
+updated date and this iteration's re-verification detail; no placeholder
+images were added.
+
+### Not done (recorded, not hidden)
+
+- **Disclaimer-in-SSE** (PRD §5/§7 requires the compliance disclaimer in
+  every API/SSE payload; it currently lives only in the UI footer). Adding a
+  `disclaimer` field to the `citations`/`done` SSE events was considered but
+  **not implemented**: `src/app/api.py::_gen_iter2_path` is under an explicit
+  hard constraint (iter-3 D9/AC-2) to stay byte-identical to the pre-Phase-3
+  SSE output when `orchestration=False` and `faq_cache=False`, and multiple
+  tests (`test_chat_stream_orchestration.py`) assert that collapse directly.
+  Touching that path risked exactly the kind of test churn/behavior surprise
+  the spec said to avoid forcing in this final pass. Recorded as a
+  pre-existing, not-introduced-here PRD-conformance gap; a real fix belongs
+  to a future iteration that can budget the SSE-shape/test updates properly.
+- **`eval.py` "naive baseline" label** — checked; already reads
+  `f"{CONFIG.rag_mode} baseline"` (parameterized on the actual mode, not
+  hardcoded to the string "naive"). No fix needed; the debt note in the
+  spec pre-dates a change that already resolved it.
+
+### Carried-debt triage (D7)
+
+See `.build/progress.md` for the full ledger update. Closed this iteration:
+dependency pinning, README finalization, `LICENSE`, the internal-shorthand
+comment reword, published eval/latency numbers, Docker/CI artifact authoring. Stays
+deferred (unchanged, with reasons re-recorded): R4b (eCFR removed-section
+deletion), R6/R7/`graph` mode, `change_resolver`, `reverify_inline`,
+scheduled-CI auto-PR + container ETL loop, answer-cache eviction/TTL, FedReg
+full-text XML, HTTP backoff, count index.
+
+---
+
 ## Phase 4, Iteration 1 — Cognitus UI/UX restyle
 
 **Date:** 2026-07-02 | **Spec:** [`.build/iter-4/spec.md`](.build/iter-4/spec.md) |

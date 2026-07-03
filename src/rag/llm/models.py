@@ -1,8 +1,8 @@
 """Phi-4-mini ONNX (int4, CPU) via onnxruntime-genai, streaming.
 
-ponytail: lazy module-level singleton, loaded on first use. If the model isn't
-present or GENERATE=false, callers fall back to extractive answers — the
-retrieval pipeline stays runnable without 2 GB of weights."""
+Deliberately minimal: lazy module-level singleton, loaded on first use. If the
+model isn't present or GENERATE=false, callers fall back to extractive answers
+— the retrieval pipeline stays runnable without 2 GB of weights."""
 from __future__ import annotations
 
 import glob
@@ -12,8 +12,9 @@ from functools import lru_cache
 import numpy as np
 
 _VARIANT = "cpu_and_mobile/cpu-int4-rtn-block-32-acc-level-4"
-# ponytail: hard cap on injected context. Regulatory sections run long; an
-# uncapped 5-section prompt OOMs the int4 CPU model's attention. ~8k chars
+# Hard cap on injected context, kept deliberately simple (no dynamic budget
+# logic). Regulatory sections run long; an uncapped 5-section prompt OOMs the
+# int4 CPU model's attention. ~8k chars
 # (~2k tokens) holds the top sections and keeps generation fast. Raise if a
 # bigger machine / smarter chunking lands (Phase 1 section-aware splitting).
 _CONTEXT_CHARS = int(os.getenv("CONTEXT_CHAR_BUDGET", "8000"))

@@ -1,7 +1,7 @@
 """ChromaDB index — persistent collection embedded with bge-small.
-ponytail: chromadb's own SentenceTransformer embedding fn does the work;
-naive dense retrieval needs no orchestration layer on top. LlamaIndex enters
-in Phase 1 when hybrid/graph actually need it."""
+Deliberately minimal: chromadb's own SentenceTransformer embedding fn does the
+work; naive dense retrieval needs no orchestration layer on top. LlamaIndex
+enters in Phase 1 when hybrid/graph actually need it."""
 from __future__ import annotations
 
 import chromadb
@@ -51,7 +51,7 @@ def build(cfg: RagConfig, records: list[dict]) -> int:
     try:
         client.delete_collection(cfg.collection)
     except Exception:
-        pass  # ponytail: first build, nothing to delete
+        pass  # expected on the first build — nothing to delete yet
     col = client.create_collection(cfg.collection, embedding_function=_embed_fn(cfg))
     col.add(**_add_args(records))
     return col.count()

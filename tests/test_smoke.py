@@ -1,7 +1,7 @@
 """One runnable check: index a known section, retrieve it, confirm the right
 citation surfaces. The eval set (data/eval/gold.jsonl) grows this in later phases.
 Run:  python -m pytest tests/ -q   (requires a built index)
-ponytail: a single end-to-end retrieval assertion, no fixtures/framework."""
+Deliberately minimal: a single end-to-end retrieval assertion, no fixtures/framework."""
 from src.rag.config import CONFIG
 from src.rag.retrieval.factory import retrieve
 

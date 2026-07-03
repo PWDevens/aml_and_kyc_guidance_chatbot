@@ -1,6 +1,6 @@
 """Build the ChromaDB index from eCFR 31 CFR Chapter X + FinCEN FedReg docs.
 Run:  python -m scripts.build_index
-ponytail: full rebuild each run; incremental upsert is Phase-2 ETL's job."""
+Deliberately simple: full rebuild each run; incremental upsert is Phase-2 ETL's job."""
 from __future__ import annotations
 
 from collections import Counter

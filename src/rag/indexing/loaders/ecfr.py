@@ -5,7 +5,7 @@ respect section boundaries, don't split mid-clause). Sections under the char
 budget stay a single chunk; longer sections are split on paragraph boundaries
 (`_split_section`) into several chunks that keep the same citation/metadata,
 so citations still resolve to the whole section (Phase-1 tuning).
-ponytail: stdlib xml.etree, requests (already a dep). No XML framework."""
+Deliberately minimal: stdlib xml.etree, requests (already a dep). No XML framework."""
 from __future__ import annotations
 import xml.etree.ElementTree as ET
 from functools import lru_cache

@@ -1,7 +1,7 @@
 """Eval harness — retrieval relevance on the gold set (ROADMAP §4).
 Measures the Phase-0 `naive` baseline so later phases prove gains against a number.
 Run:  python -m scripts.eval
-ponytail: retrieval-only metrics (hit@k + term recall) — fast, no CPU generation.
+Deliberately minimal: retrieval-only metrics (hit@k + term recall) — fast, no CPU generation.
 Generation-quality scoring is the AML/KYC SME's manual line-by-line pass + a
 Phase-3 verifier; not worth a metric framework yet.
 

@@ -1,12 +1,16 @@
-# Phase 0–1 baseline. Pinning deferred to Phase 5 hardening.
-flask
-requests
-chromadb
-sentence-transformers     # also pulls the cross-encoder reranker
-numpy                     # used directly by the Phi-4 wrapper
-rank-bm25                 # hybrid retrieval (BM25 + dense RRF)
-onnxruntime-genai         # CPU generation. Needs >=0.6 (Generator.append_tokens API,
-                          #   used by src/rag/llm/models.py); tested against 0.14.1.
+# Direct dependencies, pinned to the versions proven working throughout this
+# build (Phase 5 hardening). This is the human-readable list; `requirements.lock`
+# is the full transitive `pip freeze` used for reproducible installs (Docker,
+# CI, fresh-venv verification) — see requirements.lock's header.
+flask==3.1.3
+requests==2.34.2
+chromadb==1.5.9
+sentence-transformers==5.6.0   # also pulls the cross-encoder reranker
+numpy==2.5.0                   # used directly by the Phi-4 wrapper
+rank-bm25==0.2.2                # hybrid retrieval (BM25 + dense RRF)
+onnxruntime-genai==0.14.1      # CPU generation. Needs >=0.6 (Generator.append_tokens API,
+                          #   used by src/rag/llm/models.py); proven working at 0.14.1.
                           #   New machine w/ NVIDIA GPU:
                           #   pip install onnxruntime-genai-cuda  (instead of this line)
-huggingface-hub
+huggingface-hub==1.21.0
+pytest==9.1.1                   # test runner (dev-time only, not needed to serve the app)

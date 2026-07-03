@@ -1,6 +1,6 @@
 """Flask + SSE serving. One path: retrieve -> (generate | extractive) -> stream.
-ponytail: Flask dev server is fine for a local CPU demo; Hypercorn/ASGI is a
-Phase-5 packaging concern, not a Phase-0 need.
+Deliberately minimal: the Flask dev server is fine for a local CPU demo;
+Hypercorn/ASGI is a Phase-5 packaging concern, not a Phase-0 need.
 
 Phase 3 (D9): chat_stream.gen() gains a Tier-1 semantic FAQ fast-path (ahead
 of the iter-2 Tier-2 exact-match cache) and, when CONFIG.orchestration is on,
@@ -110,7 +110,7 @@ def _gen_iter2_path(question: str):
         if CONFIG.answer_cache:
             cache.put(CONFIG, question, "".join(answer_parts), citations, as_of)
     else:
-        # ponytail: extractive fallback so the demo answers without the LLM.
+        # Deliberately simple extractive fallback so the demo answers without the LLM.
         yield _sse("token", {"t": "Most relevant provision:\n\n" + context.split("\n\n")[0]})
     yield _sse("citations", {"citations": citations, "as_of": as_of})
     yield _sse("done", {})

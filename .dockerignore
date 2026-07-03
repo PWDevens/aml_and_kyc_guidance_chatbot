@@ -1,0 +1,14 @@
+# AUTHORED, NOT VERIFIED AGAINST A REAL `docker build` IN THIS ENVIRONMENT
+# (Docker unavailable here — see Dockerfile top-of-file comment). Excludes
+# the gitignored runtime data, dev tooling, and build-loop process history
+# from the image build context.
+data/chroma/
+data/*.db
+.venv/
+venv/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+.build/
+.pipeline/

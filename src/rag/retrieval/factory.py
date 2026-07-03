@@ -2,8 +2,8 @@
 `hybrid_rerank` (hybrid pool + cross-encoder rerank). All honour the same
 (context, citations) contract — ARCHITECTURE §3 "one serving path". `graph`
 slots in later behind the same contract.
-ponytail: dict dispatch; BM25 built once over the (small) corpus and cached.
-`hybrid_rerank` exists because the expanded gold-set eval (iter-1) measured a
+Deliberately minimal: plain dict dispatch; BM25 built once over the (small)
+corpus and cached. `hybrid_rerank` exists because the expanded gold-set eval (iter-1) measured a
 real hybrid ranking regression (near-synonym eCFR sections outranking the
 controlling one) that the cross-encoder rerank demonstrably fixes — see
 changes.md. `rag_mode` default is unaffected (naive still ties/wins overall);
@@ -37,7 +37,7 @@ def _naive(cfg: RagConfig, question: str) -> tuple[str, list[dict]]:
 @lru_cache(maxsize=1)
 def _corpus(chroma_path: str, collection: str):
     """All (id, doc, meta) + a BM25 index. Cached; corpus is small and static
-    between rebuilds. ponytail: in-memory BM25, no separate index store."""
+    between rebuilds. Deliberately minimal: in-memory BM25, no separate index store."""
     from rank_bm25 import BM25Okapi
     from ..config import RagConfig
     cfg = RagConfig()  # re-read; only used for client params here
