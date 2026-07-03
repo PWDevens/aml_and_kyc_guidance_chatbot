@@ -41,6 +41,23 @@ class RagConfig:
     etl_schedule: str = os.getenv("ETL_SCHEDULE", "daily")
     etl_fedreg_since: str = os.getenv("ETL_FEDREG_SINCE", "2020-01-01")
     etl_ecfr_since: str = os.getenv("ETL_ECFR_SINCE", "2020-01-01")
+    # Phase-3: local-first orchestration layer + semantic FAQ cache
+    # (docs/AGENT_ORCHESTRATION.md, docs/FAQ_CACHE.md). ORCHESTRATION ships
+    # false this iteration (D6) — flip only after the on-vs-off eval (AC-9)
+    # shows a win; FAQ_CACHE ships true (D7) since Tier-1 only ever serves
+    # human-curated, pre-verified answers.
+    orchestration: bool = _b("ORCHESTRATION", "false")
+    faq_cache: bool = _b("FAQ_CACHE", "true")
+    faq_db_path: str = os.getenv("FAQ_DB_PATH", str(ROOT / "data" / "faq.db"))
+    # D3: measured against real paraphrase/off-topic bands on bge-small — see
+    # changes.md. 0.83 sits above the measured off-topic ceiling (~0.70) with
+    # margin and admits genuine paraphrases (docs' proposed 0.92 was too high
+    # and would miss almost every real paraphrase).
+    faq_sim_threshold: float = float(os.getenv("FAQ_SIM_THRESHOLD", "0.83"))
+    faq_topic_crosscheck: bool = _b("FAQ_TOPIC_CROSSCHECK", "true")
+    faq_stale_policy: str = os.getenv("FAQ_STALE_POLICY", "suppress")
+    verify_answers: bool = _b("VERIFY_ANSWERS", "true")
+    orchestration_max_llm_calls: int = int(os.getenv("ORCHESTRATION_MAX_LLM_CALLS", "2"))
 
     @property
     def parts(self) -> list[str]:

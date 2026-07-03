@@ -57,6 +57,16 @@ def classify_ecfr_section(section_id: str, issue_date: str, watermark: str | Non
     return {"rule_id": "R4", "action": "upsert"}
 
 
+def classify_faq_staleness(citation: str) -> dict:
+    """R5 (docs/FAQ_CACHE.md §5, D14): after a successful R1/R4 upsert of
+    `citation`, any FAQ entry referencing it must be flagged stale (Tier-1
+    must never serve a known-stale cached compliance answer). Pure
+    classification stamp — the actual faq.db write + provenance row is
+    src/etl/pipeline.py's job (mirrors classify_ecfr_section's split of
+    "what rule applies" from "what gets written")."""
+    return {"rule_id": "R5", "action": "flag_stale", "citation": citation}
+
+
 if __name__ == "__main__":
     assert touches_watched_cfr([{"chapter": None, "part": "1010", "title": 31}], {"1010"})
     assert not touches_watched_cfr([{"chapter": None, "part": "9999", "title": 31}], {"1010"})

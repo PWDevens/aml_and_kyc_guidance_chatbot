@@ -8,15 +8,40 @@ provenance row written; the watermark advances only after the WHOLE batch
 succeeds. A mid-batch failure records an 'error' row for that item and aborts
 the watermark advance for that source — the batch re-processes next run and
 upsert-by-citation makes the retry idempotent. A failure in one source must
-not touch the other source's watermark."""
+not touch the other source's watermark.
+
+R5 (D14, FAQ staleness): after a successful R1 (fedreg rule) or R4 (ecfr
+section) upsert, _flag_faq_stale() checks whether any FAQ entry references
+the just-upserted citation and, if so, flags it stale in data/faq.db + writes
+an R5/flag_stale provenance row. Small, isolated addition — the ETL happy
+path and watermark semantics (R8) above are unchanged; a missing/absent
+faq.db is a soft no-op (FAQ seeding is independent of ETL)."""
 from __future__ import annotations
 
 from ..rag.config import RagConfig
+from ..rag.faq import store as faq_store
 from ..rag.indexing.builder import upsert_by_citation
 from ..rag.indexing.loaders import ecfr, fedreg
 from . import rules, state
 from .watchers import ecfr as ecfr_watcher
 from .watchers import fedreg as fedreg_watcher
+
+
+def _flag_faq_stale(cfg: RagConfig, source: str, document_ref: str, citation: str, as_of: str | None) -> None:
+    """R5: after a successful upsert of `citation`, flag any FAQ entry that
+    references it stale. Best-effort — an absent/unreadable faq.db must not
+    fail the ETL pass (FAQ seeding is optional infra, same posture as
+    etl_state.last_successful_run in api.py::corpus_status)."""
+    try:
+        classification = rules.classify_faq_staleness(citation)
+        n = faq_store.flag_stale(cfg, citation)
+        if n:
+            state.record(cfg, rule_id=classification["rule_id"], source=source,
+                          document_ref=document_ref, citation=citation,
+                          action=classification["action"], chunks_changed=0,
+                          as_of=as_of, status="success")
+    except Exception:
+        pass  # faq.db absent/unreadable — R5 is best-effort, never blocks ETL
 
 
 def _run_fedreg(cfg: RagConfig) -> dict:
@@ -52,6 +77,8 @@ def _run_fedreg(cfg: RagConfig) -> dict:
                                   document_ref=doc_number, citation=rec["citation"],
                                   action="upsert", chunks_changed=n, as_of=pub, status="success")
                     summary["upserted"] += n
+                    if classification["rule_id"] == "R1":
+                        _flag_faq_stale(cfg, fedreg_watcher.SOURCE, doc_number, rec["citation"], pub)
 
                     if classification.get("schedule"):
                         effective_on = classification.get("effective_on")
@@ -97,6 +124,7 @@ def _run_ecfr(cfg: RagConfig) -> dict:
                           document_ref=citation, citation=citation,
                           action="upsert", chunks_changed=n, as_of=ev["issue_date"], status="success")
             summary["upserted"] += n
+            _flag_faq_stale(cfg, ecfr_watcher.SOURCE, citation, citation, ev["issue_date"])
 
             if newest_issue_date is None or ev["issue_date"] > newest_issue_date:
                 newest_issue_date, newest_section = ev["issue_date"], ev["section"]

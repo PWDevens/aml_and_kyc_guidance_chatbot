@@ -5,6 +5,96 @@ and phase. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the overall plan.
 
 ---
 
+## Phase 3, Iteration 1 — Local orchestration + semantic FAQ cache
+
+**Date:** 2026-07-02 | **Spec:** [`.build/iter-3/spec.md`](.build/iter-3/spec.md) |
+**Results:** [`.build/iter-3/changes.md`](.build/iter-3/changes.md)
+
+### New features
+
+- **Local-first orchestration layer** (`src/rag/orchestration/`). Query framing (acronym expansion, citation/numeric hint extraction), intent classification (6 intents: definitional, numeric, procedural, cross-reference, change, citation-lookup), retrieval routing to the 3 real modes (`naive`, `hybrid`, `hybrid_rerank`), and answer verification (lexical-overlap grounding check + mandatory-element completeness for CIP/SAR/CTR topics). Gated by `ORCHESTRATION` (default **false** — deliberate safety stance pending latency-inclusive measurement; measured retrieval win of +0.04 hit@k/+0.04 term_recall, but default kept off pending generation+verification latency assessment).
+
+- **Semantic FAQ cache (Tier-1)** (`src/rag/faq/`). Pre-verified, curated Q&A fast-path sitting in front of the exact-match Tier-2 cache. 29 committed FAQ entries with real 31 CFR citations, seeded from `data/faq_seed.yaml` and built into `data/faq.db` by `scripts/seed_faq.py`. Max-over-paraphrases cosine matching with `FAQ_SIM_THRESHOLD` (default **0.83**, tuned empirically to pass genuine paraphrases while rejecting off-topic look-alikes). Topic-key cross-check guards against false positives (matched entry's topic keys must align with extracted citation/numeric hints). Gated by `FAQ_CACHE` (default **true** — human-curated answers are safe on by default).
+
+- **Answer verification (new SSE event)** (`src/rag/orchestration/verify.py`). Generated answers are checked against retrieved context for lexical grounding (claim-by-claim token-set overlap). Ungrounded answers are declined (not cached, `verification` event carries `declined: true`). Incomplete answers (missing required elements like DOB in CIP responses) are annotated but not declined. New SSE event `verification` emitted by `/chat_stream` only when orchestration + answer verification run, carrying `{grounded, declined, unsupported_claims, missing_elements, note}`.
+
+- **FAQ staleness tracking (R5)** — ETL rule triggered after successful R1/R4 upserts. Flags FAQ entries stale if their citations are updated, suppressing them from Tier-1 until re-curated. Provenance row recorded. Default suppression policy; `reverify_inline` deferred as bounded tech-debt.
+
+- **New env vars** (all optional, with sensible defaults):
+  - `ORCHESTRATION` (default `false`): enable/disable the orchestration layer.
+  - `FAQ_CACHE` (default `true`): enable/disable Tier-1 semantic FAQ fast-path.
+  - `FAQ_SIM_THRESHOLD` (default `0.83`): cosine-similarity threshold for FAQ hits.
+  - `FAQ_TOPIC_CROSSCHECK` (default `true`): require matched FAQ entry's topic keys to align with extracted hints.
+  - `FAQ_STALE_POLICY` (default `suppress`): staleness handling (only `suppress` is implemented; non-suppress values are treated as suppress with a tech-debt note).
+  - `VERIFY_ANSWERS` (default `true`): run answer verification (only consulted when `ORCHESTRATION=true`).
+  - `ORCHESTRATION_MAX_LLM_CALLS` (default `2`): budget for optional LLM escalation in verifier (not used this iteration; plumbing in place for future expansion).
+
+### Configuration & integration
+
+- `src/rag/config.py` — added 8 new environment variables (documented above) with the existing `_b()` / `os.getenv()` pattern.
+
+- `src/app/api.py` — `/chat_stream` wiring order: (1) FAQ Tier-1 semantic hit → instant replay, (2) Tier-2 exact-match cache hit → reply, (3) orchestrated or non-orchestrated retrieve, (4) generate, (5) verify + emit `verification` event, (6) cache + citations. **Byte-identical collapse:** when `ORCHESTRATION=false` and `FAQ_CACHE=false`, flow is identical to Phase 2.
+
+- `src/etl/rules.py` and `src/etl/pipeline.py` — R5 staleness rule added. After successful R1 (FinCEN final rule) or R4 (eCFR section) upsert, checks if any FAQ entry references the updated citation; flags matching entries stale and writes provenance row (`rule_id='R5'`, `action='flag_stale'`).
+
+- `scripts/eval.py` — added `--compare` flag for on-vs-off orchestration evaluation (AC-9). Original baseline (`RAG_MODE=naive`) unchanged; new compare mode measures on-vs-off retrieval performance on the gold eval set.
+
+### Measured results (AC-9)
+
+Orchestration on-vs-off comparison on the 25-item gold set:
+
+| Config | hit@k | term_recall |
+|--------|-------|-------------|
+| `ORCHESTRATION=false` (naive baseline) | 0.92 | 0.96 |
+| `ORCHESTRATION=true` (per-intent routing) | 0.96 | 1.00 |
+| Delta | +0.04 | +0.04 |
+
+**Recommendation:** default stays `false` this iteration. The retrieval-only win is real and strong, but D6 explicitly requires "no latency regression that breaks the demo." This comparison measures retrieval only (not end-to-end latency including generation + verification buffering on a CPU-slow stack). A latency-inclusive measurement is needed before flipping the default. **This is a live decision for Iteration 4**, not closed.
+
+### Decision notes
+
+- **D3 threshold delta:** `docs/FAQ_CACHE.md` proposed `FAQ_SIM_THRESHOLD=0.92`; shipped as **0.83** per empirical measurement. Real paraphrases scored 0.79–0.88 against canonical questions; 0.92 would have missed them. 0.83 sits above measured off-topic ceiling (~0.70) with margin. Documented in `changes.md` per spec requirement to record divergence.
+
+- **D5 `change_resolver` deferred:** The `change` intent is classified and routed to `hybrid_rerank` (same fallback as cross-reference), but no temporal-diff timeline is assembled. Deferral reason: depends on a version-history ledger Phase 2 did not build. Deferred with stated reason, documented in `changes.md` and `progress.md`.
+
+- **D12 verifier mechanism:** Lexical-only (no LLM escalation this iteration). Optional gray-band LLM-entailment path is budgeted (`ORCHESTRATION_MAX_LLM_CALLS`) but not wired; ceiling documented for future expansion.
+
+- **D13 classifier/framer:** Pure heuristic (no LLM fallback). Keyword-based intent classification, acronym glossary (15 entries: CTR, SAR, CDD, CIP, BSA, UBO, MSB, EDD, PEP, FBAR, AML, KYC, FinCEN, OFAC, SDN), citation/numeric hint regex, chit-chat stripping. Fully tested; LLM fallback stubbed per spec's "if time-constrained" allowance.
+
+### API & internal changes
+
+- `src/rag/faq/` — new package containing `embed.py` (request-time query embedding via `sentence_transformers`, `@lru_cache` singleton), `store.py` (SQLite FAQ store, mirrors `cache.py` style), `matcher.py` (semantic FAQ matching with threshold + cross-check).
+
+- `src/rag/orchestration/` — new package containing `intents.py` (framing + classification), `router.py` (intent→mode dispatch with hard assertion on real modes only), `verify.py` (grounding + completeness), `planner.py` (orchestration state machine, per-request config assembly).
+
+- `scripts/seed_faq.py` — idempotent script that builds `data/faq.db` from `data/faq_seed.yaml` using the same embedding model as the matcher (D1 requirement for cosine consistency).
+
+- `data/faq_seed.yaml` — 29 curated FAQ entries, each with real 31 CFR citations verified against the live corpus.
+
+### Tests
+
+- `tests/test_faq_embed.py`, `tests/test_faq_matcher.py`, `tests/test_orchestration_skills.py`, `tests/test_chat_stream_orchestration.py`, `tests/test_faq_staleness_r5.py` — 57 new tests covering intent classification, framing, routing, verifier grounding/completeness, FAQ matching (paraphrase + cross-check), TTL/independence, staleness flagging.
+
+- `test_iter3_adversarial.py` (19 tests, debugger stage) — additional event-order edge cases, FAQ threshold margin verification, verifier stopword-exclusion fix verification, DB isolation audit.
+
+- **Existing tests:** All 47 pre-iter-3 tests pass unchanged (with one required fix to `test_chat_stream_cache.py`: tempdir isolation for both `cache_path` and new `faq_db_path` to prevent real FAQ seeded entries from intercepting test questions).
+
+- **Full suite:** 123 tests pass (104 senior-dev handoff + 19 adversarial).
+
+### Simplifications / deferred
+
+- **No LLM-escalation path** (gray-band verifier claims). Infrastructure in place (`Budget` class); Phi-4 entailment wiring deferred as bounded tech-debt with clear ceiling.
+
+- **No LLM fallback for classifier/framer** (stubbed per "if time-constrained"). Pure heuristic path is complete and tested.
+
+- **R5 `reverify_inline` policy** — only `suppress` is implemented; non-suppress values accepted but treated as suppress. Bounded tech-debt; couples ETL to generation/verification, clear upgrade path.
+
+- **`change_resolver` skill** — deferred (D5). `change` intent routes to `hybrid_rerank` (fallback); no temporal assembly. Iteration 4's "What changed timeline" explicitly conditional on this shipping.
+
+- **R6 (graph rebuild sync), R7 (FFIEC ingest), R4b (eCFR removed-section deletion)** — all deferred as explicitly out-of-scope this iteration.
+
+---
+
 ## Phase 2, Iteration 1 — Trigger-based ETL: watchers, rules engine, incremental upsert
 
 **Date:** 2026-07-02 | **Spec:** [`.build/iter-2/spec.md`](.build/iter-2/spec.md) |

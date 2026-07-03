@@ -135,26 +135,196 @@
   separate count index"). Ceiling: add a maintained count index if the corpus grows large.
 
 ## Next
-- **Iteration 3 — Phase 3: orchestration + semantic FAQ cache** (per `.build/backlog.md`).
-  Phase 2 (trigger-based ETL) shipped at the iter-2 gate. Iteration 3 opens the Phase-3
-  scope deferred out of iter-2: R5 (FAQ refresh) and R6 (graph rebuild) sync triggers,
-  R7 (FFIEC ingest / `loaders/ffiec.py`), the semantic FAQ cache tier (`src/rag/faq/**`,
-  `scripts/seed_faq.py`), and orchestration (`src/rag/orchestration/**`, planner/skills,
-  `answer_verifier`). Carry forward into the iter-3 spec:
-  - **F2 (CIP completeness)** from the pre-loop ledger: Phase-3's `answer_verifier` should
-    include a mandatory-element completeness check.
-  - **eCFR removed-section deletion (R4b)** — the iter-2 accepted-debt item above; a
-    natural fit alongside R5/R6 sync rules if Phase 3 touches corpus-mutation rules.
+- **Iteration 4 — Phase 4: Cognitus UI/UX** (per `.build/backlog.md` §"Iteration 4 —
+  Phase 4: Cognitus UI/UX", driven by `docs/UIUX_COGNITUS.md`). Iteration 3 shipped clean
+  at its re-gate (2026-07-02, below). Iteration 4 opens the deferred UI scope:
+  `cognitus.css`/`cognitus.js` tokens applied to `src/app/static/`, hero + chat/ask
+  surfaces per the Cognitus design spec. Live decision to revisit at the top of iter-4:
+  whether to flip the `ORCHESTRATION` default to `true` (see the iter-3 open-decision note
+  below) with a latency-inclusive end-to-end measurement.
+  - **F2 (CIP completeness)** shipped in iter-3's `answer_verifier` (mandatory-element
+    completeness check, AC-5) — closed, no longer carried.
+  - **eCFR removed-section deletion (R4b)** — still open (deferred D15); not required by
+    Phase 4, carry forward.
 - **Natural later-iteration candidate (not for Iteration 3 unless scoped in):** the measured numbers favor
   `hybrid_rerank` (avg rank 1.12, term_recall 1.00 vs naive's 0.92). AC-4 was scoped to a
   naive-vs-hybrid decision only, so promoting `hybrid_rerank` to default is a *new*
   evidence-based decision for a later iteration to make deliberately — not a gap in
   iteration 1.
 
+## Iteration 3 — implemented (senior-dev pass, pre-gate; 2026-07-02)
+Phase 3: `src/rag/faq/**` (semantic FAQ Tier-1: `embed.py`, `store.py`,
+`matcher.py`), `src/rag/orchestration/**` (`intents.py`, `router.py`,
+`verify.py`, `planner.py`), `data/faq_seed.yaml` (29 curated entries) +
+`scripts/seed_faq.py`, R5 staleness flagging in `src/etl/rules.py`/`pipeline.py`,
+`/chat_stream` Tier-1 + orchestrated-path wiring in `src/app/api.py`. Full
+details, AC-9 real numbers, and every divergence-from-docs decision in
+`.build/iter-3/changes.md`. Suite: 100 passed (47 carried + 53 new).
+
+Carried-forward deferrals for Iteration 4's awareness (per D5/D14/D15,
+already resolved-not-open in the iter-3 spec, not new debt):
+- **`change_resolver` skill — deferred (D5).** Needs a queryable version-
+  history/valid_from-valid_to ledger iter-2 did not build (iter-2's
+  provenance ledger records ingest *actions*, not a before/after timeline).
+  The `change` intent is classified/routed (to `hybrid_rerank`) but no
+  bespoke temporal timeline is assembled. Iteration 4's "what changed
+  timeline view" is explicitly conditional on this shipping.
+- **R5 `reverify_inline` policy — not built (D14).** Only `FAQ_STALE_POLICY=
+  suppress` is implemented; any other value is accepted but treated as
+  suppress. Upgrade path: re-verify-inline requires running the full
+  retrieve+verify loop from ETL, which couples ETL to generation — a
+  deliberate scope boundary, not an oversight.
+- **R4b (eCFR removed-section chunk deletion) — deferred (D15).** Still open
+  from iter-2's accepted debt; not required by any iter-3 AC. Unchanged.
+- **`ORCHESTRATION` ships `false` by default (D6).** AC-9's real on-vs-off
+  numbers (retrieval-relevance only) show a small, unambiguous win
+  (hit@k +0.04, term_recall +0.04) with no regression — see changes.md for
+  the full table and the reasoning for NOT flipping the default this
+  iteration despite the positive delta (the eval is retrieval-only; it does
+  not measure the orchestrated path's added per-request latency/verification
+  cost). This is a live decision Iteration 4 should revisit with a fuller
+  (latency-inclusive) measurement before flipping.
+
+## Iteration 3 — senior-PM gate: NEEDS WORK (2026-07-02; `.build/iter-3/verdict.md`)
+Phase 3 (orchestration + semantic FAQ cache). **The code ships clean; one required
+non-code fix blocks final SHIP.** Every load-bearing architectural claim was verified
+independently at the gate (not on the reports' word) and holds — see verdict.md #1–#9.
+Suite re-run at the gate: `py -3.12 -m pytest tests/ -q` → **123 passed, 0 failed** (171s).
+
+**Required fix (RF-1) — data-only, no code change:** the live `data/faq.db` has **19 of
+29 entries `stale=1`** (queried directly at the gate, reproducible). Under the shipped
+default `FAQ_STALE_POLICY=suppress` this suppresses the Tier-1 FAQ fast-path for ~65% of
+the seeded corpus, so **AC-6 is not demonstrably true against the live db** (it passes in
+tempdir tests only). `test-results.md`'s appended "RESOLVED by the orchestrator" note
+claims the seed was re-run and "all 29 entries now `stale=0`" — **false against the
+current db** (db mtime 20:14:18 precedes the report's 20:14:46; a real 29-row seed run
+would have bumped it). The R5 *code* is correct and `store.py::upsert_entry`'s
+`INSERT OR REPLACE` + the no-`stale`-key `data/faq_seed.yaml` make the seed the correct
+idempotent instrument — it simply was not actually run. **Path to SHIP:** (1) run
+`py -3.12 -m scripts.seed_faq` against the real `data/faq.db`; (2) confirm
+`SELECT COUNT(*) FROM faq_entries WHERE stale=1` = 0 (total 29); (3) correct the false
+"RESOLVED" note in `test-results.md`. On completion the re-gate is a formality (all code
+checks already pass, suite green). The gate is read-only and did **not** run the seed
+(running a build/seed script against live data is the write the tester was correctly
+blocked from). `data/etl_state.db`'s 0-R5-rows-vs-19-stale history is correctly left as-is
+(no fabricated retroactive provenance) — only `faq.db` needs the reset.
+
+## Iteration 3 — senior-PM RE-GATE: SHIP (2026-07-02; `.build/iter-3/verdict.md` overwritten)
+The prior NEEDS WORK verdict (RF-1) is resolved and **durably** verified; iteration 3 ships.
+The prior gate's RF-1 finding turned out to have a deeper root cause than the "reseed the db"
+remediation it prescribed — and the orchestrator found and fixed the real one.
+
+**Real root cause (verified against the code at re-gate):** `tests/test_etl_fedreg_live.py`
+(an iter-2 live-API test) isolated `chroma_path`/`etl_state_path` into a tempdir but never
+isolated `faq_db_path`. Harmless in iter-2 (no faq.db existed), it became a live corruption
+bug the moment iter-3's `pipeline._run_ecfr` (pipeline.py:127) started calling
+`_flag_faq_stale()` **unconditionally** after every R4 upsert. The test's cold-start tempdir
+has no `ecfr` watermark, so `_run_ecfr` reprocesses years of real eCFR changes against the
+live API, each calling `faq_store.flag_stale(cfg, ...)` against `cfg.faq_db_path` — which
+defaulted to the **real** `data/faq.db`. Every real run of that live test re-flagged ~19
+entries stale. That is why the orchestrator's earlier one-time `seed_faq` "fix" didn't stick
+and the prior gate found 19/29 stale again. `test_etl_pipeline_r1_schedule.py`'s `_tmp_cfg`
+had the same gap (no real corruption today — its synthetic doc number never matches a real
+FAQ `topic_keys` — fixed anyway for correctness).
+
+**Fix (exactly as claimed, no scope creep):** `+faq_db_path=str(Path(d) / "faq.db")` added to
+both tests' tempdir config (`git diff` = **+1 line each**, nothing else), plus a real
+`seed_faq` reseed of `data/faq.db`. `test-results.md`'s false "RESOLVED" note replaced with an
+honest CORRECTION describing the real root cause + durable fix.
+
+**Verified independently at the re-gate — the check the prior false note skipped:**
+- Both test files read directly: `faq_db_path` genuinely isolated (fedreg_live.py:36,
+  r1_schedule.py:47 in `_tmp_cfg`). Confirmed `faq_db_path` is a real `RagConfig` field
+  (config.py:51) and `store.flag_stale` writes via `_conn(cfg)` → the override truly redirects
+  writes; not an ignored kwarg.
+- Live `data/faq.db` queried by SQL **before** the gate's own suite run: 29 total, **0 stale**.
+- Gate ran the full suite itself: `py -3.12 -m pytest tests/ -q` → **123 passed** (158.26s,
+  exit 0; `.build/iter-3/regate-pytest.txt`). The live test PASSED (not skipped) in 152.93s —
+  the previously-corrupting cold-start path genuinely executed.
+- **Critical durability check:** live `data/faq.db` queried by SQL **immediately after** the
+  gate's own suite run, and again after a second standalone live-test run → **0 stale both
+  times** (still 29/29 `stale=0`). This is exactly what was true only momentarily last time and
+  is now durable under a real run the gate triggered. RF-1 closed; **AC-6 now demonstrably true
+  against the live seeded corpus**, not just tempdir tests.
+- All nine prior code checks (D9 byte-identical collapse, D8 router, verify.py stopword fix,
+  R5 mechanism + `if n:` scope, seed-count honesty, ponytail cleanliness, security/deps/scope)
+  unchanged by a 2-line test edit + reseed; re-affirmed by the green suite. `requirements.txt`
+  untouched. No surprise edits in `git status`/`git diff --stat`. **Iteration 3 ships.**
+
+## Accepted tech-debt from Iteration 3 (bounded, with upgrade paths — carry forward)
+Carried forward from `.build/iter-3/changes.md`; all judged sound scope calls at the gate.
+- **No LLM-escalation path for gray-band verifier claims (D12).** Verifier is
+  lexical-overlap-only; gray-band (weak-but-nonzero overlap) claims are labeled
+  `grounded_with_caveat`, not escalated (the documented over-budget fallback). `Budget`
+  plumbing exists and is tested. Ceiling: wire `Budget.spend()` + a Phi-4 entailment
+  prompt into `verify.py`'s gray-band branch if lexical-only precision/recall proves
+  inadequate on real generated answers.
+- **No LLM fallback for `intent_classifier`/`query_framer` (D13).** Fully absent (not
+  stubbed); heuristic path is complete and tested. Ceiling: add a `Budget.has_budget()`-
+  gated Phi-4 few-shot fallback for genuinely ambiguous input if the
+  default-to-`definitional` heuristic proves too coarse on real traffic.
+- **`router.py`'s `top_n` is advisory-only.** `RagConfig` has no `top_n` field, so
+  `route()`'s `top_n` is returned per the interface contract but not consumed by
+  `factory.py`'s pool-size logic (which derives its own from `retrieval_top_k`). Not a
+  correctness bug. Ceiling: thread `top_n` into `_hybrid`/`_hybrid_rerank` as an explicit
+  pool-size override if per-intent tuning becomes valuable.
+- **R5 provenance row written only when `flag_stale` flags ≥1 entry (`if n:`).** An upsert
+  matching no FAQ entry writes no R5 row (avoids flooding the ledger with no-op rows).
+  Judged consistent with the ETL doc's "one row per ingest *action*" — an unfired trigger
+  is not an action. Ceiling: change the `if n:` guard in `pipeline._flag_faq_stale` to
+  always record if a complete "checked, no match" audit trail is later required.
+- **FAQ seed = 29 entries** (spec target ~30–50; floor ≥12). All real 31 CFR citations,
+  no padding — honest per the backlog's explicit allowance. Ceiling: add more curated
+  entries (and more paraphrase variants per entry to close measured recall-boundary
+  misses, e.g. the 0.73-scoring wordier CTR paraphrase the tester recorded) in a later
+  curation pass.
+
+## Iteration 3 — live decision left open for Iteration 4+
+- **Whether to flip the `ORCHESTRATION` default to `true` (D6).** AC-9's on-vs-off eval
+  shows a small, unambiguous **retrieval-only** win (hit@k +0.04, term_recall +0.04, no
+  regression). D6's flip bar also requires "no latency regression that breaks the demo,"
+  which this retrieval-only eval cannot measure (it never exercises generation, buffered
+  verification, or the FAQ tier). **Iteration 4 should revisit with a latency-inclusive,
+  end-to-end `/chat_stream` measurement before flipping.** Until then the safe default
+  stays `false`; the `true` code path is fully built and tested.
+
+## Iteration 3 — deferred items (carry forward, unchanged)
+- **`change_resolver` skill — deferred (D5).** `change` intent is classified/routed (to
+  `hybrid_rerank`) but no bespoke temporal timeline is assembled. Needs a queryable
+  version-history / valid_from–valid_to ledger iter-2 did not build. Iteration 4's "what
+  changed timeline view" is explicitly conditional on this shipping.
+- **R5 `reverify_inline` policy — not built (D14).** Only `FAQ_STALE_POLICY=suppress` is
+  implemented; any other value is accepted but treated as suppress. Upgrade path:
+  reverify-inline requires running the full retrieve+verify loop from ETL, coupling ETL to
+  generation — a deliberate scope boundary, not an oversight.
+- **`graph` retrieval mode / LightRAG, R6 (graph rebuild), R7 (FFIEC ingest) — not built.**
+  Out-of-scope per the iter-3 spec; router falls back to `hybrid_rerank` for
+  cross-reference. Confirmed absent at the gate.
+- **R4b (eCFR removed-section chunk deletion) — deferred (D15).** Still open from iter-2's
+  accepted debt; not required by any iter-3 AC. Unchanged.
+
 ## Blockers
-- None. Iteration 2 shipped clean at the gate (no required fixes). No irreversible action
-  is required by Iteration 3 either. (Historical: iter-1's F1 docstring reword was a
-  required fix, not a blocker.)
+- **None open.** Iteration 3's RF-1 (the prior NEEDS WORK gate) is resolved and durably
+  re-verified at the re-gate (2026-07-02): 29/29 `stale=0` confirmed by the gate's own SQL
+  query immediately after the gate's own suite run (and after a second live-test run). The
+  real root cause (test `faq_db_path` isolation gap, not just a stale db) was found and
+  fixed. Iterations 1, 2, and 3 have all shipped at their gates. Iteration 4 (Phase 4:
+  Cognitus UI/UX) is clear to open.
+
+## General observations for future iterations (cross-cutting lessons)
+- **Test fixtures must isolate ALL config paths any subsystem they exercise may write to —
+  not only the paths that existed when the test was written.** This is the **second** time
+  in this build a test/script silently touched real data: (1) iter-2's `build_index`/
+  head-pipe incident that deleted `data/chroma`; (2) iter-3's RF-1, where `test_etl_fedreg_live.py`
+  isolated `chroma_path`/`etl_state_path` but not `faq_db_path`, so iter-3's new
+  unconditional `_flag_faq_stale` call on the existing `_run_ecfr` path corrupted the real
+  `data/faq.db` on every live-test run. Rule going forward: when an iteration adds a write
+  to a NEW subsystem on an EXISTING code path, every pre-existing test that drives that path
+  becomes a latent real-data corruption vector until its tempdir fixture is updated to
+  isolate the new path. Prefer a single shared `_tmp_cfg`-style helper that sets every
+  derived path (`chroma_path`, `etl_state_path`, `faq_db_path`, `cache_path`, …) at once, so
+  adding a new path is a one-line change in one place rather than an easily-missed edit
+  across N test files.
 
 ## Manual follow-ups for the user (accumulate here, do not perform)
 - No git remote configured — repo was `git init`'d locally at loop kickoff so each

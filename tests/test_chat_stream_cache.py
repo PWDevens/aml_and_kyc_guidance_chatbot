@@ -36,7 +36,13 @@ def _events(body: str) -> list[tuple[str, dict]]:
 
 
 def _tmp_cfg(d: str):
-    return replace(CONFIG, cache_path=str(Path(d) / "test_cache.db"))
+    # Phase 3: also point faq_db_path at a tempdir path (absent -> the Tier-1
+    # FAQ matcher gracefully misses, same as pre-Phase-3 behavior) so these
+    # iter-2 exact-cache tests aren't intercepted by the real, now-seeded
+    # data/faq.db (AC-11). Mirrors this file's own "own tempdir-backed DB"
+    # pattern, just extended to the new DB Phase 3 introduces.
+    return replace(CONFIG, cache_path=str(Path(d) / "test_cache.db"),
+                    faq_db_path=str(Path(d) / "test_faq.db"))
 
 
 def test_generated_answer_is_cached_and_replayed_on_second_call():

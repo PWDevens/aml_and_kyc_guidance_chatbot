@@ -33,6 +33,7 @@ def test_seeded_watermark_detects_and_ingests_live_fedreg_changes():
             chroma_path=str(Path(d) / "chroma"),
             collection="etl_live_test",
             etl_state_path=str(Path(d) / "etl_state.db"),
+            faq_db_path=str(Path(d) / "faq.db"),
         )
         state.set_watermark(cfg, "fedreg", "2024-12-31", None)
 

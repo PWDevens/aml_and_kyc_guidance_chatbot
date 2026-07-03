@@ -32,12 +32,13 @@ cache, Flask/SSE serving, Docker, and a tagged version progression). It then
 
 ## Status
 
-✅ **Phase 1 complete; Phase 2 complete.** Phases 0–2 are implemented and tested:
+✅ **Phase 0–3 complete.** Implemented and tested:
 - **Phase 0:** eCFR loader, naive retrieval, generation, Flask+SSE app.
 - **Phase 1:** Multi-mode retrieval backbone, FinCEN Federal Register corpus, section-aware chunking, exact-match answer cache.
 - **Phase 2:** Trigger-based ETL (watchers for FedReg + eCFR, rules engine R1–R4, incremental upsert-by-citation, provenance ledger).
+- **Phase 3:** Local orchestration layer (query framing, intent classification, retrieval routing) + semantic FAQ cache (Tier-1, 29 curated entries). Orchestration OFF by default pending latency-inclusive measurement; FAQ cache ON by default.
 
-See [CHANGELOG](CHANGELOG.md) for per-iteration details. Phases 3–5 (orchestration, semantic FAQ cache, Cognitus UI/design, CI/Docker) follow the [roadmap](docs/ROADMAP.md).
+See [CHANGELOG](CHANGELOG.md) for per-iteration details. Phases 4–5 (Cognitus UI, CI/Docker) follow the [roadmap](docs/ROADMAP.md).
 
 ---
 

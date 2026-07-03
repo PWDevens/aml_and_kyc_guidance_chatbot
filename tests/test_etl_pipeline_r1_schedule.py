@@ -44,6 +44,7 @@ def _tmp_cfg(d: str):
         chroma_path=str(Path(d) / "chroma"),
         collection="etl_pipeline_r1_test",
         etl_state_path=str(Path(d) / "etl_state.db"),
+        faq_db_path=str(Path(d) / "faq.db"),
     )
 
 

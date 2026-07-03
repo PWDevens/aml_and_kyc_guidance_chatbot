@@ -1,0 +1,514 @@
+# Curated FAQ seed (AC-11, FAQ_CACHE §8). Every entry's `citations` references
+# a real 31 CFR section confirmed present in the built corpus (verified
+# read-only against data/chroma; see .build/iter-3/changes.md for the list).
+# Answers are hand-written from the actual eCFR section text, not generated.
+#
+# topic_keys carry BOTH the bare section number (e.g. "1010.311") and any
+# dollar-amount hint relevant to the D4 topic-key cross-check, since
+# query_framer's numeric_hint extraction produces bare "$10,000"-style
+# strings and citation_hint extraction produces bare "31 CFR 1010.311"-style
+# strings; matcher.py checks the section suffix against topic_keys.
+#
+# Build with:  py -3.12 -m scripts.seed_faq
+
+- id: faq-ctr-threshold
+  canonical_question: "What is the CTR filing threshold?"
+  paraphrases:
+    - "when do I file a CTR"
+    - "currency transaction report dollar limit"
+    - "what dollar amount triggers a Currency Transaction Report"
+  answer: >
+    A financial institution must file a Currency Transaction Report (CTR) for
+    any deposit, withdrawal, exchange of currency, or other payment or
+    transfer that involves a transaction in currency of more than $10,000
+    (31 CFR 1010.311).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.311", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.311", as_of: "2026-06-30"}
+  topic_keys: ["1010.311", "CTR", "$10,000"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-ctr-who-files
+  canonical_question: "Who must file a report of a transaction in currency over $10,000?"
+  paraphrases:
+    - "which institutions have to file a CTR"
+    - "who is required to report large currency transactions"
+  answer: >
+    Each financial institution other than a casino must file a CTR for
+    deposits, withdrawals, exchanges of currency, or other payments or
+    transfers involving more than $10,000 in currency, with a narrow carve-out
+    for U.S. Postal Service payments solely for postage or philatelic products
+    (31 CFR 1010.311).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.311", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.311", as_of: "2026-06-30"}
+  topic_keys: ["1010.311", "CTR", "$10,000"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-ctr-identification
+  canonical_question: "What identification must a financial institution verify before completing a currency transaction requiring a CTR?"
+  paraphrases:
+    - "what ID is required before a reportable currency transaction"
+    - "identity verification for CTR transactions"
+  answer: >
+    Before completing a transaction requiring a CTR, a financial institution
+    must verify and record the name and address of the individual presenting
+    the transaction, plus the identity, account number, and SSN/TIN (if any)
+    of any person or entity on whose behalf the transaction is effected.
+    Non-residents/aliens are verified by passport, alien ID card, or other
+    official document; others by a document normally acceptable for cashing
+    checks (e.g. driver's license) (31 CFR 1010.312).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.312", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.312", as_of: "2026-06-30"}
+  topic_keys: ["1010.312", "CTR"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-ctr-aggregation
+  canonical_question: "How are multiple currency transactions aggregated for CTR purposes in one business day?"
+  paraphrases:
+    - "does a bank have to combine several cash transactions in the same day"
+    - "aggregation rule for multiple currency deposits"
+  answer: >
+    Multiple currency transactions are treated as a single transaction for
+    CTR purposes if the financial institution has knowledge they are by or on
+    behalf of the same person and result in cash in or cash out totaling more
+    than $10,000 during one business day. Night, weekend, or holiday deposits
+    are treated as received the next business day (31 CFR 1010.313).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.313", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.313", as_of: "2026-06-30"}
+  topic_keys: ["1010.313", "CTR", "$10,000"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-structuring-definition
+  canonical_question: "What does it mean to structure a transaction to evade currency reporting requirements?"
+  paraphrases:
+    - "what is structuring under the Bank Secrecy Act"
+    - "define structuring transactions"
+  answer: >
+    No person may, for the purpose of evading currency reporting requirements,
+    cause or attempt to cause a financial institution to fail to file a
+    required report, cause a report to contain a material omission or
+    misstatement, or structure (or assist in structuring) any transaction with
+    one or more domestic financial institutions (31 CFR 1010.314).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.314", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.314", as_of: "2026-06-30"}
+  topic_keys: ["1010.314", "structuring"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-8300-threshold
+  canonical_question: "What is the reporting threshold for currency received in a trade or business?"
+  paraphrases:
+    - "when does a business have to report cash payments over $10,000"
+    - "trade or business currency reporting limit"
+  answer: >
+    Any person who, in the course of a trade or business, receives currency in
+    excess of $10,000 in one transaction (or two or more related transactions)
+    must report that receipt, generally on Form 8300 (31 CFR 1010.330).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.330", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.330", as_of: "2023-04-10"}
+  topic_keys: ["1010.330", "$10,000"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-8300-form
+  canonical_question: "What form is used to report currency in excess of $10,000 received in a trade or business?"
+  paraphrases:
+    - "which IRS/FinCEN form reports large cash receipts in a business"
+    - "form for reporting cash over 10000 dollars received by a business"
+  answer: >
+    Reports of currency in excess of $10,000 received in a trade or business
+    are made by filing Form 8300, at the time and in the manner specified in
+    26 CFR 1.6050I-1 (31 CFR 1010.330(e)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.330", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.330", as_of: "2023-04-10"}
+  topic_keys: ["1010.330", "Form 8300", "$10,000"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-8300-15-days
+  canonical_question: "How many days does a person have to file a report after receiving an initial payment exceeding $10,000 in a trade or business?"
+  paraphrases:
+    - "filing deadline for Form 8300 after a cash payment over 10000"
+    - "how soon must a business report a large cash payment"
+  answer: >
+    A report of currency exceeding $10,000 received in a trade or business
+    must be made within 15 days after receiving the payment that causes the
+    amount (or aggregated amount within a 12-month period) to exceed $10,000
+    (31 CFR 1010.330(b)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.330", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.330", as_of: "2023-04-10"}
+  topic_keys: ["1010.330", "15 days", "$10,000"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-cmir-threshold
+  canonical_question: "What is the threshold for reporting the transportation of currency or monetary instruments into or out of the United States?"
+  paraphrases:
+    - "when must you report carrying cash across the US border"
+    - "currency and monetary instrument report CMIR dollar limit"
+  answer: >
+    A person who physically transports, mails, or ships currency or other
+    monetary instruments exceeding $10,000 at one time into or out of the
+    United States must report the transportation, and a person who receives
+    such an unreported shipment from abroad must also report it
+    (31 CFR 1010.340).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.340", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.340", as_of: "2026-06-30"}
+  topic_keys: ["1010.340", "$10,000"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-fbar-who
+  canonical_question: "Who must report a financial interest in a foreign bank, securities, or other financial account?"
+  paraphrases:
+    - "who has to file an FBAR"
+    - "foreign bank account reporting requirement"
+  answer: >
+    Each United States person having a financial interest in, or signature or
+    other authority over, a bank, securities, or other financial account in a
+    foreign country must report that relationship annually to the
+    Commissioner of Internal Revenue, using the Report of Foreign Bank and
+    Financial Accounts (FBAR) or any successor form (31 CFR 1010.350).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.350", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.350", as_of: "2023-04-10"}
+  topic_keys: ["1010.350", "FBAR", "United States person"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-extension-credit-recordkeeping
+  canonical_question: "What records must be made for extensions of credit over $10,000?"
+  paraphrases:
+    - "recordkeeping requirement for loans over 10000"
+    - "what must a bank record for a large extension of credit"
+  answer: >
+    Each financial institution must retain a record of each extension of
+    credit in an amount exceeding $10,000 (other than one secured by an
+    interest in real property), including the name and address of the person
+    to whom credit was extended, the amount, the nature or purpose, and the
+    date (31 CFR 1010.410(a)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.410", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.410", as_of: "2026-01-05"}
+  topic_keys: ["1010.410", "$10,000", "extension of credit"]
+  verified_by: curator
+  as_of: "2026-01-05"
+
+- id: faq-bank-check-3000
+  canonical_question: "At what dollar amount must a financial institution begin recordkeeping when issuing a bank check, cashier's check, or money order purchased with currency?"
+  paraphrases:
+    - "recordkeeping threshold for cashier's checks and money orders bought with cash"
+    - "when does a bank have to record who bought a money order with cash"
+  answer: >
+    No financial institution may issue or sell a bank check or draft,
+    cashier's check, money order, or traveler's check for $3,000 or more in
+    currency without maintaining records of the purchase — required for
+    currency amounts of $3,000 up to $10,000 inclusive (31 CFR 1010.415(a)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.415", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.415", as_of: "2026-06-30"}
+  topic_keys: ["1010.415", "$3,000"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-bank-check-retention
+  canonical_question: "How long must records of bank check and money order purchases be retained?"
+  paraphrases:
+    - "retention period for cashier's check purchase records"
+    - "how many years must a bank keep money order records"
+  answer: >
+    Records required for currency purchases of bank checks, drafts, cashier's
+    checks, money orders, and traveler's checks must be retained by the
+    financial institution for five years and made available to the Secretary
+    upon request (31 CFR 1010.415(c)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.415", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.415", as_of: "2026-06-30"}
+  topic_keys: ["1010.415", "five years"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-beneficial-ownership-25pct
+  canonical_question: "What are the beneficial ownership identification requirements for legal entity customers opening an account?"
+  paraphrases:
+    - "beneficial ownership rule for legal entity customers"
+    - "who counts as a beneficial owner of a company opening a bank account"
+  answer: >
+    Covered financial institutions must identify and verify the beneficial
+    owner(s) of each legal entity customer at account opening. A beneficial
+    owner is (1) each individual who directly or indirectly owns 25 percent or
+    more of the entity's equity interests, and (2) a single individual with
+    significant responsibility to control, manage, or direct the entity (e.g.
+    a CEO, CFO, COO, managing member, or general partner) (31 CFR 1010.230).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.230", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.230", as_of: "2026-06-30"}
+  topic_keys: ["1010.230", "25 percent", "UBO"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-aml-program-elements
+  canonical_question: "What minimum elements must a bank's anti-money laundering program include?"
+  paraphrases:
+    - "required elements of a bank AML compliance program"
+    - "what does a bank's BSA/AML program need to have"
+  answer: >
+    A bank's anti-money laundering program must include, at a minimum: a
+    system of internal controls to assure ongoing compliance; independent
+    testing for compliance; designation of an individual or individuals
+    responsible for day-to-day compliance; training for appropriate
+    personnel; and risk-based procedures for ongoing customer due diligence,
+    including understanding the nature and purpose of customer relationships
+    and monitoring for suspicious transactions (31 CFR 1020.210).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.210", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.210", as_of: "2020-11-16"}
+  topic_keys: ["1020.210", "internal controls", "AML"]
+  verified_by: curator
+  as_of: "2020-11-16"
+
+- id: faq-cip-minimum
+  canonical_question: "What are the minimum requirements for a customer identification program?"
+  paraphrases:
+    - "CIP minimum requirements"
+    - "what must a bank's customer identification program include"
+  answer: >
+    A bank's written Customer Identification Program (CIP) must, at a
+    minimum, obtain from each customer prior to opening an account: (1) name;
+    (2) date of birth, for an individual; (3) address (a residential or
+    business street address, or equivalent); and (4) an identification
+    number (a taxpayer identification number for a U.S. person, or a
+    passport/alien ID/similar number and country of issuance for a non-U.S.
+    person). The CIP must also include risk-based procedures for verifying
+    each customer's identity (31 CFR 1020.220(a)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.220", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.220", as_of: "2023-04-10"}
+  topic_keys: ["1020.220", "CIP", "identity"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-cip-identifying-info
+  canonical_question: "What identifying information must a bank obtain from a customer at account opening?"
+  paraphrases:
+    - "what information does a bank collect when opening an account"
+    - "customer identifying information required to open a bank account"
+  answer: >
+    Except in narrow permitted cases, a bank must obtain, at a minimum, the
+    customer's name; date of birth (for an individual); address (residential
+    or business street address for an individual, or principal place of
+    business for an entity); and identification number (a U.S. taxpayer
+    identification number, or for non-U.S. persons a TIN, passport number, or
+    equivalent) before opening an account (31 CFR 1020.220(a)(2)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.220", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.220", as_of: "2023-04-10"}
+  topic_keys: ["1020.220", "CIP", "address"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-sar-timing
+  canonical_question: "When must a bank file a Suspicious Activity Report after detecting facts that may require one?"
+  paraphrases:
+    - "SAR filing deadline"
+    - "how many days does a bank have to file a SAR after detection"
+  answer: >
+    A bank must file a Suspicious Activity Report (SAR) no later than 30
+    calendar days after the date of initial detection of facts that may
+    constitute a basis for filing. If no suspect was identified on the
+    detection date, filing may be delayed up to an additional 30 calendar
+    days, but in no case more than 60 calendar days after initial detection
+    (31 CFR 1020.320(b)(3)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.320", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.320", as_of: "2023-04-10"}
+  topic_keys: ["1020.320", "SAR", "30 calendar days"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-sar-dollar-minimum
+  canonical_question: "What is the minimum dollar amount involved for a transaction to require a Suspicious Activity Report filing by a bank?"
+  paraphrases:
+    - "SAR dollar threshold"
+    - "minimum amount for suspicious activity reporting"
+  answer: >
+    A transaction requires SAR reporting if it is conducted or attempted by,
+    at, or through the bank, involves or aggregates at least $5,000 in funds
+    or other assets, and the bank knows, suspects, or has reason to suspect it
+    involves illegal proceeds, is designed to evade BSA requirements, or has
+    no business or apparent lawful purpose (31 CFR 1020.320(a)(2)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.320", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.320", as_of: "2023-04-10"}
+  topic_keys: ["1020.320", "SAR", "$5,000"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-exempt-person-criteria
+  canonical_question: "What criteria make a non-listed business eligible to be designated an exempt person from currency transaction reporting?"
+  paraphrases:
+    - "exempt person status for CTR non-listed business"
+    - "requirements for a business to be a CTR exempt person"
+  answer: >
+    A non-listed business may qualify as an exempt person if it (1) maintains
+    a transaction account at the bank for at least two months (with narrow
+    exceptions), (2) frequently engages in currency transactions with the
+    bank in excess of $10,000, and (3) is incorporated or organized under, or
+    registered and eligible to do business under, the laws of the United
+    States or a State (31 CFR 1020.315(b)(6)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.315", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.315", as_of: "2023-04-10"}
+  topic_keys: ["1020.315", "$10,000", "exempt person"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-funds-transfer-3000-recordkeeping
+  canonical_question: "What recordkeeping is required for funds transfers of $3,000 or more accepted by a bank as an originator's bank?"
+  paraphrases:
+    - "recordkeeping for wire transfers over 3000 dollars"
+    - "what must a bank record when it originates a funds transfer over $3,000"
+  answer: >
+    For each payment order of $3,000 or more that a bank accepts as an
+    originator's bank, it must obtain and retain the name and address of the
+    originator, the amount and execution date of the payment order, any
+    payment instructions received, the identity of the beneficiary's bank,
+    and identifying information about the recipient where available
+    (31 CFR 1020.410(a)(1)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.410", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.410", as_of: "2022-02-14"}
+  topic_keys: ["1020.410", "$3,000"]
+  verified_by: curator
+  as_of: "2022-02-14"
+
+- id: faq-bsa-acronym
+  canonical_question: "What does BSA stand for in AML/KYC compliance?"
+  paraphrases:
+    - "what is the Bank Secrecy Act"
+    - "define BSA"
+  answer: >
+    BSA stands for the Bank Secrecy Act, the foundational U.S. anti-money
+    laundering statute (31 U.S.C. 5311 et seq.) that requires financial
+    institutions to keep records and file reports (such as CTRs and SARs)
+    that are useful in criminal, tax, and regulatory investigations, and to
+    guard against money laundering. Its implementing regulations are codified
+    at 31 CFR Chapter X, including the AML program requirements at
+    31 CFR 1020.210.
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.210", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.210", as_of: "2020-11-16"}
+  topic_keys: ["1020.210", "BSA"]
+  verified_by: curator
+  as_of: "2020-11-16"
+
+- id: faq-cdd-nature-purpose
+  canonical_question: "What does customer due diligence require a bank to understand about a customer relationship?"
+  paraphrases:
+    - "what is CDD in AML compliance"
+    - "customer due diligence requirements for banks"
+  answer: >
+    A bank's risk-based customer due diligence procedures must, at a minimum,
+    enable the bank to understand the nature and purpose of customer
+    relationships for the purpose of developing a customer risk profile, and
+    to conduct ongoing monitoring to identify and report suspicious
+    transactions and, on a risk basis, maintain and update customer
+    information, including beneficial ownership information for legal entity
+    customers (31 CFR 1020.210(a)(2)(v)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.210", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.210", as_of: "2020-11-16"}
+  topic_keys: ["1020.210", "CDD", "customer due diligence"]
+  verified_by: curator
+  as_of: "2020-11-16"
+
+- id: faq-fbar-us-person-definition
+  canonical_question: "Who qualifies as a United States person for FBAR reporting purposes?"
+  paraphrases:
+    - "definition of United States person for foreign account reporting"
+    - "who counts as a US person under 31 CFR 1010.350"
+  answer: >
+    For FBAR purposes, a "United States person" includes a citizen of the
+    United States, a resident alien of the United States, and certain
+    entities (corporations, partnerships, trusts, or LLCs) created, organized,
+    or formed under the laws of the United States, any State, the District of
+    Columbia, U.S. territories/possessions, or Indian Tribes
+    (31 CFR 1010.350(b)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.350", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.350", as_of: "2023-04-10"}
+  topic_keys: ["1010.350", "United States person", "FBAR"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-sar-confidentiality
+  canonical_question: "Can a bank disclose that it has filed a Suspicious Activity Report?"
+  paraphrases:
+    - "SAR confidentiality rule"
+    - "is it illegal to tell a customer about a SAR filing"
+  answer: >
+    No. No bank, and no director, officer, employee, or agent of a bank, may
+    disclose a SAR or any information that would reveal the existence of a
+    SAR, except to FinCEN, relevant law enforcement or regulatory
+    authorities, or in narrow permitted circumstances such as preparing a
+    joint SAR with another financial institution (31 CFR 1020.320(e)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.320", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.320", as_of: "2023-04-10"}
+  topic_keys: ["1020.320", "SAR", "confidentiality"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-sar-retention
+  canonical_question: "How long must a bank retain a copy of a filed Suspicious Activity Report and its supporting documentation?"
+  paraphrases:
+    - "SAR recordkeeping retention period"
+    - "how many years to keep SAR documentation"
+  answer: >
+    A bank must maintain a copy of any SAR filed, and the original or
+    business-record equivalent of any supporting documentation, for five
+    years from the date of filing (31 CFR 1020.320(d)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.320", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.320", as_of: "2023-04-10"}
+  topic_keys: ["1020.320", "SAR", "five years"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-cip-record-retention
+  canonical_question: "How long must a bank retain records collected under its Customer Identification Program?"
+  paraphrases:
+    - "CIP recordkeeping retention period"
+    - "how many years to keep customer identification records"
+  answer: >
+    A bank must retain identifying information obtained about a customer for
+    five years after the date the account is closed (or, for credit card
+    accounts, five years after the account is closed or becomes dormant), and
+    must retain records describing verification documents/methods and
+    discrepancy resolutions for five years after the record is made
+    (31 CFR 1020.220(a)(3)(ii)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1020.220", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1020/section-1020.220", as_of: "2023-04-10"}
+  topic_keys: ["1020.220", "CIP", "five years"]
+  verified_by: curator
+  as_of: "2023-04-10"
+
+- id: faq-beneficial-ownership-recordkeeping
+  canonical_question: "How long must a covered financial institution retain beneficial ownership records for legal entity customers?"
+  paraphrases:
+    - "beneficial ownership recordkeeping retention period"
+    - "how many years to keep UBO verification records"
+  answer: >
+    A covered financial institution must retain beneficial ownership
+    identification records for five years after the date the account is
+    closed, and verification records for five years after the record is made
+    (31 CFR 1010.230(i)(2)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.230", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.230", as_of: "2026-06-30"}
+  topic_keys: ["1010.230", "five years", "UBO"]
+  verified_by: curator
+  as_of: "2026-06-30"
+
+- id: faq-fedwire-3000-content
+  canonical_question: "What information must a transmittor's financial institution include in a transmittal order of $3,000 or more?"
+  paraphrases:
+    - "required content of a wire transfer order over 3000 dollars"
+    - "what fields must accompany a funds transmittal of $3,000 or more"
+  answer: >
+    A transmittor's financial institution must include in the transmittal
+    order the transmittor's name (and account number, if paid from an
+    account), the transmittor's address, the amount and execution date of the
+    order, the identity of the recipient's financial institution, and, where
+    received, the recipient's name, address, account number, or other
+    specific identifier (31 CFR 1010.410(f)(1)).
+  citations:
+    - {source: ecfr, citation: "31 CFR 1010.410", url: "https://www.ecfr.gov/current/title-31/chapter-X/part-1010/section-1010.410", as_of: "2026-01-05"}
+  topic_keys: ["1010.410", "$3,000"]
+  verified_by: curator
+  as_of: "2026-01-05"
