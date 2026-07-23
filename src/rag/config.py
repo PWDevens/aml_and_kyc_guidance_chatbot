@@ -6,6 +6,19 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+# Bound HuggingFace Hub network waits so a stalled model download — the embedder
+# pulled during `scripts.build_index`, or Phi-4 pulled on the first generate —
+# fails fast with an error instead of hanging a build, a CI job, or a request
+# indefinitely. Set as an explicit, version-independent default (huggingface_hub
+# library defaults have varied across versions); `setdefault` keeps both knobs
+# overridable from the environment. The Dockerfile sets the same values so the
+# image build and container runtime are covered even before this import runs.
+# config.py is imported by every entry point (build_index, seed_faq, app, llm
+# models) before any HF download is triggered, so setting them here is enough
+# for local and CI runs.
+os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "30")
+os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "30")
+
 ROOT = Path(__file__).resolve().parents[2]
 
 

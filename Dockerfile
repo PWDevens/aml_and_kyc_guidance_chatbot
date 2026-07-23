@@ -22,6 +22,14 @@ RUN pip install --no-cache-dir -r requirements.lock
 
 COPY . .
 
+# Bound HuggingFace Hub network waits so a stalled model download (the embedder
+# pulled by the index build below, or Phi-4 pulled on the container's first
+# generate) fails fast instead of hanging indefinitely. Set before the build
+# step so it applies there too; mirrors the defaults in src/rag/config.py and
+# stays overridable at run time.
+ENV HF_HUB_DOWNLOAD_TIMEOUT=30
+ENV HF_HUB_ETAG_TIMEOUT=30
+
 # Index strategy (see "Edge cases" in .build/iter-5/spec.md §6): the ChromaDB
 # index and FAQ db are gitignored (data/chroma/, data/*.db) — never committed
 # — so the image builds them itself at image-build time from the live eCFR +
