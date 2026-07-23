@@ -1,12 +1,12 @@
 # -----------------------------------------------------------------------------
-# AUTHORED, NOT BUILT/RUN IN THIS ENVIRONMENT.
-# Docker is not installed on the machine this file was authored on (verified:
-# `docker --version` -> command not found, both Bash and PowerShell). This
-# Dockerfile has been reviewed for internal correctness and consistency with
-# the locally-verified run (README "Quickstart", .build/iter-5/test-results.md
-# AC-5) but has never been `docker build`/`docker run`-executed. Verify on a
-# Docker-enabled host before relying on it. See docker/docker-compose.yml and
-# README "Docker" section for the matching run story.
+# BUILT AND RUN (verified 2026-07-23 on a Docker-enabled host).
+# `docker build .` produces a ~9.4 GB image (in-container index build ~84s,
+# 402 chunks); the running container serves /healthz, /corpus_status, and
+# /chat_stream (FAQ fast-path + live Phi-4 generation, HTTP 200). The same
+# `docker build` runs green in CI (.github/workflows/ci.yml docker-build job).
+# The original machine had no Docker, so earlier revisions were authored but
+# never executed — that caveat no longer applies. See docker/docker-compose.yml
+# and README "Docker" for the matching run story.
 # -----------------------------------------------------------------------------
 FROM python:3.12-slim
 

@@ -1,8 +1,9 @@
 # -----------------------------------------------------------------------------
-# AUTHORED, NOT BUILT/RUN IN THIS ENVIRONMENT (docker-compose is unavailable
-# here too — `docker-compose --version` -> command not found). Reviewed for
-# internal consistency with the root Dockerfile and the README "Docker"
-# section; never executed. Verify on a Docker-enabled host.
+# VERIFIED 2026-07-23 on a Docker-enabled host: `docker compose -f
+# docker/docker-compose.yml config` resolves cleanly (build context -> repo
+# root, port 8000 published) and the image it builds serves the app. The
+# original dev machine had no Docker/compose, so earlier revisions were
+# authored but never executed; that caveat no longer applies.
 #
 # Build context is the repo root (one level up from this file), since the
 # Dockerfile and .dockerignore both live there.
@@ -18,8 +19,8 @@ services:
       - PORT=8000
       # Override any RagConfig knob here (src/rag/config.py), e.g.:
       # - RAG_MODE=hybrid_rerank
-      # - ORCHESTRATION=false   # matches the shipped default (D6); do not
-      #                          flip without reading README "Results".
+      # - ORCHESTRATION=false   # opt out of the orchestrated path; true is now
+      #                          the shipped default (see README "Results").
     # The Dockerfile builds the index + FAQ db INSIDE the image at build time
     # (see Dockerfile comment), so no volume mount is required for a basic
     # run. If you'd rather reuse an already-built data/ directory from the

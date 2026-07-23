@@ -5,6 +5,56 @@ and phase. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the overall plan.
 
 ---
 
+## Phase 5, Iteration 2 — Docker + CI actually run (E2E)
+
+**Date:** 2026-07-23
+
+The Docker image and GitHub Actions workflow — authored but never executed in
+Iteration 1 (that machine had no Docker and no git remote) — were built and run
+for the first time on a Docker-enabled host with a git remote. The first real
+run surfaced two defects, both now fixed and verified green
+([Actions run #30031024428](https://github.com/PWDevens/aml_and_kyc_guidance_chatbot/actions/runs/30031024428)).
+
+### Fixes
+
+- **CI test collection (`conftest.py`, new).** The workflow's bare
+  `pytest tests/ -q` prepended `tests/` (not the repo root) to `sys.path`, so
+  every module's `from src...` import failed with `ModuleNotFoundError`
+  (21 collection errors). Local runs had passed only via `python -m pytest`
+  (which prepends CWD). A repo-root `conftest.py` is collected by pytest and
+  prepends its basedir (the repo root) to `sys.path`, fixing all invocation
+  forms.
+- **Docker container serving (`src/app/asgi.py`, `Dockerfile`).** `asgi.py`
+  hardcoded `host="127.0.0.1"`, so the container bound only its loopback and
+  the published port was unreachable. The bind host is now `HOST` env-driven
+  (default `127.0.0.1` for local dev); the Dockerfile sets `HOST=0.0.0.0`.
+
+### Changes
+
+- **`ORCHESTRATION` now defaults to `true`** (`src/rag/config.py`). The AC-9
+  eval on the current corpus shows orchestration matching naive on `hit@5`
+  (1.00) while improving `term_recall` (1.00 vs 0.92); latency has headroom in
+  the 10–60s CPU band. Fully reversible via `ORCHESTRATION=false`.
+- **CI workflow** (`.github/workflows/ci.yml`): bumped `actions/checkout` and
+  `actions/setup-python` to `v7` (clears the Node-20 deprecation warning); the
+  ~130s network-dependent live Federal Register test runs as a separate
+  non-blocking step; added a GHCR image push gated to pushes on `main`.
+- **Docs**: README/CHANGELOG and the Dockerfile/compose/.dockerignore/CI
+  headers updated from "authored, never executed" to the verified status; README
+  eval numbers refreshed against the current 402-chunk corpus (the earlier
+  `2022-21020` `hit@5` gap no longer reproduces — that doc now retrieves at
+  rank 4); Python 3.12 documented as the required, supported interpreter.
+
+### Verified
+
+- Full suite **146 passed** via bare `pytest tests/ -q` in a `python:3.12`
+  image; `docker build` green (~9.4 GB, in-container index build ~84s);
+  container serves `/healthz`, `/corpus_status` (402 chunks), and `/chat_stream`
+  (FAQ fast-path + live generation); hosted CI `test` + `docker-build` both
+  green on PR #1.
+
+---
+
 ## Phase 5, Iteration 1 — Hardening & release (v1.0)
 
 **Date:** 2026-07-02 | **Spec:** [`.build/iter-5/spec.md`](.build/iter-5/spec.md) |
