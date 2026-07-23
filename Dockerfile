@@ -35,6 +35,10 @@ RUN python -m scripts.build_index && python -m scripts.seed_faq
 EXPOSE 8000
 
 ENV PORT=8000
+# Bind all interfaces inside the container so the published port (-p 8000:8000)
+# is reachable from the host. src/app/asgi.py defaults HOST to 127.0.0.1 for
+# safe local dev; the container must override it to 0.0.0.0.
+ENV HOST=0.0.0.0
 
 # Flask dev server, same as the locally-verified `python -m src.app.asgi`
 # entrypoint (README Quickstart). Hypercorn/ASGI wrapping is documented
