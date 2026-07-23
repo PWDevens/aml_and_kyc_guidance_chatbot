@@ -1,12 +1,12 @@
 # -----------------------------------------------------------------------------
-# AUTHORED, NOT BUILT/RUN IN THIS ENVIRONMENT.
-# Docker is not installed on the machine this file was authored on (verified:
-# `docker --version` -> command not found, both Bash and PowerShell). This
-# Dockerfile has been reviewed for internal correctness and consistency with
-# the locally-verified run (README "Quickstart", .build/iter-5/test-results.md
-# AC-5) but has never been `docker build`/`docker run`-executed. Verify on a
-# Docker-enabled host before relying on it. See docker/docker-compose.yml and
-# README "Docker" section for the matching run story.
+# BUILT AND RUN (verified 2026-07-23 on a Docker-enabled host).
+# `docker build .` produces a ~9.4 GB image (in-container index build ~84s,
+# 402 chunks); the running container serves /healthz, /corpus_status, and
+# /chat_stream (FAQ fast-path + live Phi-4 generation, HTTP 200). The same
+# `docker build` runs green in CI (.github/workflows/ci.yml docker-build job).
+# The original machine had no Docker, so earlier revisions were authored but
+# never executed — that caveat no longer applies. See docker/docker-compose.yml
+# and README "Docker" for the matching run story.
 # -----------------------------------------------------------------------------
 FROM python:3.12-slim
 
@@ -35,6 +35,10 @@ RUN python -m scripts.build_index && python -m scripts.seed_faq
 EXPOSE 8000
 
 ENV PORT=8000
+# Bind all interfaces inside the container so the published port (-p 8000:8000)
+# is reachable from the host. src/app/asgi.py defaults HOST to 127.0.0.1 for
+# safe local dev; the container must override it to 0.0.0.0.
+ENV HOST=0.0.0.0
 
 # Flask dev server, same as the locally-verified `python -m src.app.asgi`
 # entrypoint (README Quickstart). Hypercorn/ASGI wrapping is documented

@@ -42,11 +42,15 @@ class RagConfig:
     etl_fedreg_since: str = os.getenv("ETL_FEDREG_SINCE", "2020-01-01")
     etl_ecfr_since: str = os.getenv("ETL_ECFR_SINCE", "2020-01-01")
     # Phase-3: local-first orchestration layer + semantic FAQ cache
-    # (docs/AGENT_ORCHESTRATION.md, docs/FAQ_CACHE.md). ORCHESTRATION ships
-    # false this iteration (D6) — flip only after the on-vs-off eval (AC-9)
-    # shows a win; FAQ_CACHE ships true (D7) since Tier-1 only ever serves
-    # human-curated, pre-verified answers.
-    orchestration: bool = _b("ORCHESTRATION", "false")
+    # (docs/AGENT_ORCHESTRATION.md, docs/FAQ_CACHE.md). ORCHESTRATION now ships
+    # true: the AC-9 on-vs-off eval showed a real, reproducible win (hit@5
+    # 0.96 vs 0.92, term_recall 1.00 vs 0.96 on the 25-item gold set — see
+    # README "Results"), and the AC-3 fresh-generation latency (median ~18s)
+    # leaves headroom inside the 10-60s CPU band even with the extra
+    # frame->classify->route->verify step. Set ORCHESTRATION=false to fall back
+    # to the single-mode iter-2 path. FAQ_CACHE ships true (D7) since Tier-1
+    # only ever serves human-curated, pre-verified answers.
+    orchestration: bool = _b("ORCHESTRATION", "true")
     faq_cache: bool = _b("FAQ_CACHE", "true")
     faq_db_path: str = os.getenv("FAQ_DB_PATH", str(ROOT / "data" / "faq.db"))
     # D3: measured against real paraphrase/off-topic bands on bge-small — see

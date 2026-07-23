@@ -41,15 +41,19 @@ verify — see "Honesty notes" below for exactly what that limit is.
 - **Phase 2:** Trigger-based ETL (watchers for FedReg + eCFR, rules engine R1–R4, incremental upsert-by-citation, provenance ledger).
 - **Phase 3:** Local orchestration layer (query framing, intent classification, retrieval routing, answer verification) + semantic FAQ cache (Tier-1, 29 curated entries). Orchestration **off** by default; FAQ cache **on** by default.
 - **Phase 4:** Cognitus design system UI: Jefferson-Blue structural color, Bronze eyebrow kickers / source badges, Cyan streaming caret accent, hairline rules. All interaction states rendered (streaming, citations, verifier-decline, FAQ-hit marker).
-- **Phase 5 (this release):** Dependencies pinned to a verified lockfile (`requirements.lock`); test suite expanded to close retrieval-factory/RRF coverage gaps; real latency and eval numbers measured and published (see "Results" below); a genuine from-scratch rebuild demonstrated; the codebase's internal shorthand comments reworded to plain language; Docker + CI artifacts authored and reviewed (not built/run here — Docker isn't installed on this machine and there's no git remote); README/CHANGELOG finalized; MIT `LICENSE` added.
+- **Phase 5 (this release):** Dependencies pinned to a verified lockfile (`requirements.lock`); test suite expanded to close retrieval-factory/RRF coverage gaps; real latency and eval numbers measured and published (see "Results" below); a genuine from-scratch rebuild demonstrated; the codebase's internal shorthand comments reworded to plain language; Docker + CI **built, run, and verified green** on a Docker-enabled host (see "Honesty notes"); README/CHANGELOG finalized; MIT `LICENSE` added.
 
 **Honesty notes (read before trusting a "done" claim in this README):**
-- Everything under "Quickstart" and "Results" below was **actually run** on
-  this machine and the numbers are real — see `.build/iter-5/test-results.md`
-  for the exact commands and full output.
-- The **Docker** image and the **CI workflow** were authored and reviewed but
-  **never executed** — this machine has no Docker install and this repo has
-  no git remote / Actions runner. Neither is claimed to build, run, or pass.
+- Everything under "Quickstart" and "Results" below was **actually run** and
+  the numbers are real — see `.build/iter-5/test-results.md` for the exact
+  commands and full output.
+- The **Docker** image and the **CI workflow** were **built, run, and verified**
+  on a Docker-enabled host on 2026-07-23. `docker build` produces a working
+  image whose container serves the app; GitHub Actions (`test` + `docker-build`
+  jobs) runs green — see run
+  [#30031024428](https://github.com/PWDevens/aml_and_kyc_guidance_chatbot/actions/runs/30031024428).
+  Two defects surfaced by that first real run (bare-`pytest` import path; the
+  container binding `127.0.0.1` instead of `0.0.0.0`) were fixed as part of it.
 
 See [CHANGELOG](CHANGELOG.md) for per-iteration details and [`docs/ROADMAP.md`](docs/ROADMAP.md) for the phased plan this release completes.
 
@@ -57,9 +61,12 @@ See [CHANGELOG](CHANGELOG.md) for per-iteration details and [`docs/ROADMAP.md`](
 
 ## Quickstart / Run
 
-Prerequisites: **Python 3.12** (this project was built and tested against
-3.12.10), no GPU required (int4 CPU generation), no external services beyond
-outbound HTTPS to the eCFR/Federal Register public APIs during index build.
+Prerequisites: **Python 3.12 required** (built and tested against 3.12.10; the
+`requirements.lock` freeze is a 3.12 environment and the CI/Docker images pin
+`python:3.12`). Newer interpreters (e.g. 3.13) are **not** a supported target —
+some pinned wheels in the lock have no 3.13 build. No GPU required (int4 CPU
+generation), no external services beyond outbound HTTPS to the eCFR/Federal
+Register public APIs during index build.
 
 ```bash
 # 1. Install pinned dependencies (the exact versions this build was verified against)
@@ -97,15 +104,14 @@ docker compose -f docker/docker-compose.yml up --build
 # or:  docker build -t aml-kyc-rag-chatbot . && docker run -p 8000:8000 aml-kyc-rag-chatbot
 ```
 
-> **Status: authored but not built/run in this environment.** Docker is not
-> installed on the machine this project was developed on (`docker --version`
-> → command not found). The Dockerfile and compose file have been reviewed for
-> internal correctness and consistency with the Quickstart steps above
-> (`python:3.12-slim` base, deps from `requirements.lock`, builds the index +
-> FAQ db at image-build time, runs `python -m src.app.asgi` on port 8000) but
-> **have never actually been built or run**. Verify on a Docker-enabled host
-> before relying on the image. See the top-of-file comments in `Dockerfile`
-> and `docker/docker-compose.yml` for the same disclosure.
+> **Status: built, run, and verified (2026-07-23, Docker-enabled host).**
+> `docker build` produces a ~9.4 GB image (`python:3.12-slim` base, deps from
+> `requirements.lock`, index + FAQ db built at image-build time). The running
+> container serves `/healthz`, `/corpus_status` (402 chunks), and
+> `/chat_stream` — FAQ fast-path and live Phi-4 generation, both HTTP 200 —
+> reachable on the published port because the container binds `0.0.0.0`
+> (`HOST=0.0.0.0`, set in the Dockerfile; `src/app/asgi.py` defaults to
+> `127.0.0.1` for local dev). The same `docker build` runs green in CI.
 
 ---
 
@@ -201,31 +207,33 @@ only showing the best case.
 
 ### Retrieval & orchestration eval (AC-6)
 
-Re-run against the live 475-chunk corpus (25-item gold set,
-`data/eval/gold.jsonl`), `python -m scripts.eval` / `--compare`:
+Re-run 2026-07-23 against a freshly rebuilt **402-chunk** corpus (25-item gold
+set, `data/eval/gold.jsonl`), `python -m scripts.eval` / `--compare`:
 
 | Config | hit@5 | term_recall |
 |---|---|---|
-| `RAG_MODE=naive` (shipped default) | 0.92 | 0.96 |
-| `ORCHESTRATION=false` (single default mode) | 0.92 | 0.96 |
-| `ORCHESTRATION=true` (per-intent routing) | 0.96 | 1.00 |
-| Delta (on − off) | **+0.04** | **+0.04** |
+| `ORCHESTRATION=false` (single default mode=naive) | 1.00 | 0.92 |
+| `ORCHESTRATION=true` (per-intent routing, **shipped default**) | 1.00 | 1.00 |
+| Delta (on − off) | **+0.00** | **+0.08** |
 
-These numbers match the historical figures recorded in [CHANGELOG](CHANGELOG.md)
-Phase 3 exactly — the corpus and gold set are stable, so re-running reproduces
-the same result. The two `hit@5` misses (both on FinCEN's 2022 beneficial-
-ownership final rule, doc `2022-21020`) are a real, reproducible retrieval gap
-on that specific document, not measurement noise — see
-`.build/iter-5/test-results.md` for the item-level detail.
+> **Note — corpus is rebuilt live, so numbers move.** The index is built from
+> the eCFR + Federal Register APIs at run/build time and is never committed, so
+> its exact size tracks whatever those APIs return. This run indexed 402 chunks
+> vs. the 475 recorded in [CHANGELOG](CHANGELOG.md) Phase 3. On this corpus the
+> earlier `hit@5` gap on FinCEN's 2022 beneficial-ownership final rule (doc
+> `2022-21020`) is **gone** — that document is indexed and now retrieves at rank
+> 4 for both gold questions, so `hit@5` is a perfect 1.00 for both configs.
+> Orchestration's measured win here is on `term_recall` (+0.08).
 
-**Recommendation on `ORCHESTRATION`:** the retrieval-only win is real
-(+0.04/+0.04) and the AC-3 fresh-generation latency (median ~18s) leaves
-headroom inside the 10–60s band even with orchestration's extra
-frame→classify→route step. The evidence now supports flipping the default.
-This release still ships `ORCHESTRATION=false` — flipping the serving default
-is a behavior change to the demo path, and Phase 5's mandate was hardening,
-not re-tuning routing. It is a one-line, fully reversible env-var change
-(`ORCHESTRATION=true`) the next person can make with this evidence in hand.
+**`ORCHESTRATION` now ships on by default.** On the current corpus `hit@5` is
+already saturated, and orchestration's per-intent routing still adds a real
+`term_recall` gain (1.00 vs 0.92, +0.08); the AC-3 fresh-generation latency
+(median ~18s) leaves headroom inside the 10–60s CPU band even with the extra
+frame→classify→route→verify step. So the default was flipped to
+`ORCHESTRATION=true` (config default in `src/rag/config.py`). It is a fully
+reversible env-var change — set `ORCHESTRATION=false` to fall back to the
+single-mode iter-2 path (which still collapses to the byte-identical iter-2
+behavior when `FAQ_CACHE=false` as well, per AC-2).
 
 ### hybrid_rerank (measured in iteration 1, unchanged this release)
 
@@ -246,22 +254,24 @@ badges, a single Cyan accent (streaming caret), hairline rules, no
 shadows/gradients. See [`docs/UIUX_COGNITUS.md`](docs/UIUX_COGNITUS.md) for
 the full design spec.
 
-> **Note (re-attempted 2026-07-02, still deferred):** the three required
-> screenshots (landing/hero + corpus-status strip, answer + citation panel at
-> desktop and mobile widths, and the verifier-decline state) could not be
-> captured as image files. This was re-attempted in Phase 5 with the same
-> preview/screenshot tooling used in iteration 4: the server starts cleanly,
-> every route returns 200 OK, the page's full accessibility-tree snapshot
-> confirms correct rendering (header, hero, ask box, answer/citations regions,
-> footer disclaimer all present), and there are no console errors — but the
-> screenshot capture call itself times out (30s), twice in a row, reproducing
-> iteration 4's exact failure mode. This is a tooling limitation in this
-> environment, not a page defect. No placeholder images have been added. See
-> `.build/iter-4/changes.md` and `.build/iter-5/changes.md` for the
-> verification performed in place of pixel screenshots, and capture these
-> three screenshots manually (open `python -m src.app.asgi` and visit
-> `http://127.0.0.1:8000/`) at the next opportunity with working screenshot
-> tooling.
+> **Note (re-verified 2026-07-23 against the running Docker container, pixel
+> capture still deferred):** the UI was re-checked live at `http://localhost:8001`
+> (containerized app). The accessibility-tree and page-text snapshots confirm
+> correct rendering end to end: the Cognitus banner + health dot, hero (eyebrow
+> "AML / KYC · RAG", heading, subtitle), the corpus-status strip (`Corpus as of
+> 2026-07-21`, sections indexed, `Sources: ecfr · fedreg_proposed · fedreg_rule
+> · fincen_advisory`), the ask form, a populated **Answer** ("...more than
+> $10,000 (31 CFR 1010.311)") with the **from FAQ** marker, the **Citations**
+> panel (`31 CFR 1010.311`, View source, `as of: 2026-06-30`), and the footer
+> disclaimer. No console errors. Pixel PNG capture still could not be produced:
+> the headless browser pane does not composite frames, so the screenshot call
+> times out — the same tooling limitation seen before, not a page defect. (One
+> visible side effect of that same limitation: the corpus-count animation, which
+> uses `requestAnimationFrame`, does not tick in the non-displayed pane and reads
+> `0`; setting it directly yields `402`, confirming it animates normally in a
+> real, displayed browser.) To capture the three screenshots manually, run the
+> container (`docker compose -f docker/docker-compose.yml up --build`) or
+> `python -m src.app.asgi`, then visit the app in a normal browser.
 
 ---
 

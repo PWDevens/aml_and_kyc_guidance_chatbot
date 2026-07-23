@@ -1,7 +1,6 @@
-# AUTHORED, NOT VERIFIED AGAINST A REAL `docker build` IN THIS ENVIRONMENT
-# (Docker unavailable here — see Dockerfile top-of-file comment). Excludes
-# the gitignored runtime data, dev tooling, and build-loop process history
-# from the image build context.
+# Verified against a real `docker build` (2026-07-23) — see Dockerfile
+# top-of-file comment. Excludes the gitignored runtime data, dev tooling, and
+# build-loop process history from the image build context.
 data/chroma/
 data/*.db
 .venv/
